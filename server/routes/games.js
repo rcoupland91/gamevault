@@ -1,6 +1,6 @@
 const router = require('express').Router();
-const { pool } = require('../server/db/setup');
-const { requireAuth } = require('../server/middleware/auth');
+const { pool } = require('../db/setup');
+const { requireAuth } = require('../middleware/auth');
 
 // All routes require auth
 router.use(requireAuth);
