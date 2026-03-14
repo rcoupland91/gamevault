@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const fetch  = require('node-fetch');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth } = require('../server/middleware/auth');
 const rateLimit = require('express-rate-limit');
 
 const searchLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: { error: 'Too many search requests' } });
