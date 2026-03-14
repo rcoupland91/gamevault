@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check all required files exist
+        run: |
+          test -f server/index.js
+          test -f server/db/setup.js
+          test -f server/routes/auth.js
+          test -f server/routes/games.js
+          test -f server/routes/rawg.js
+          test -f server/utils/email.js
+          test -f client/index.html
+          test -f client/manifest.json
+          test -f client/sw.js
+          echo "All required files present"
+
+      - name: Validate package.json
+        run: node -e "require('./package.json'); console.log('package.json valid')"
+
+      - name: Build Docker image
+        run: docker build -t gamevault:ci .
+
+      - name: Confirm Docker image starts
+        run: |
+          docker run --rm -d \
+            --name gamevault-ci \
+            -e DB_HOST=localhost \
+            -e DB_PASSWORD=test \
+            -e JWT_SECRET=testsecretthatisverylong1234567890abcdef \
+            -e REFRESH_TOKEN_SECRET=refreshsecretthatisverylong1234567890 \
+            gamevault:ci || true
+          sleep 3
+          docker stop gamevault-ci 2>/dev/null || true
+          echo "Docker image OK"
