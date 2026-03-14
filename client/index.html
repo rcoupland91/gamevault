@@ -23,13 +23,13 @@
     .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:28px 0 20px;flex-shrink:0;z-index:10}
     .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 22px 28px;font-family:var(--font-head);font-size:1.25rem;font-weight:800;letter-spacing:-.03em}
     .logo-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#c47fff);display:grid;place-items:center;font-size:16px;flex-shrink:0}
-    .nav{flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px}
+    .nav{padding:0 12px;display:flex;flex-direction:column;gap:2px}
     .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:.875rem;font-weight:500;color:var(--text2);transition:all .15s;border:none;background:none;width:100%;text-align:left}
     .nav-item:hover{background:var(--bg3);color:var(--text)}
     .nav-item.active{background:var(--glow);color:var(--accent2)}
     .nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0}
     .nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:20px;min-width:22px;text-align:center}
-    .sidebar-bottom{padding:12px;display:flex;flex-direction:column;gap:4px}
+    .sidebar-bottom{padding:12px;display:flex;flex-direction:column;gap:4px;margin-top:auto}
     .theme-toggle,.sidebar-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:.875rem;font-weight:500;color:var(--text2);transition:all .15s;border:none;background:none;width:100%;text-align:left}
     .theme-toggle:hover,.sidebar-btn:hover{background:var(--bg3);color:var(--text)}
     .user-chip{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg3);margin-bottom:6px}
@@ -333,23 +333,21 @@
       <div class="logo-icon">🎮</div>
       GameVault
     </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px 10px;border-bottom:1px solid var(--border);margin-bottom:8px;cursor:pointer" id="sidebar-user-card" title="Edit profile">
+      <div class="user-avatar" id="user-avatar" style="width:24px;height:24px;font-size:.7rem;flex-shrink:0">?</div>
+      <div class="user-name" id="user-name-display" style="font-size:.82rem;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Loading…</div>
+      <div class="sync-dot" id="sync-dot" title="Synced"></div>
+    </div>
     <nav class="nav">
       <button class="nav-item active" data-page="dashboard"><span class="nav-icon">⬡</span>Dashboard</button>
       <button class="nav-item" data-page="playing"><span class="nav-icon">▶</span>Now Playing<span class="nav-badge" id="badge-playing">0</span></button>
       <button class="nav-item" data-page="played"><span class="nav-icon">✓</span>Completed<span class="nav-badge" id="badge-played">0</span></button>
       <button class="nav-item" data-page="toplay"><span class="nav-icon">🔖</span>Backlog<span class="nav-badge" id="badge-toplay">0</span></button>
       <button class="nav-item" data-page="all"><span class="nav-icon">☰</span>All Games</button>
+      <button class="nav-item" data-page="profile"><span class="nav-icon">👤</span>Profile</button>
       <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>Settings</button>
     </nav>
-    <div class="sidebar-bottom">
-      <div class="user-chip" id="user-chip">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <div class="user-name" id="user-name-display">Loading…</div>
-        <div class="sync-dot" id="sync-dot" title="Synced"></div>
-      </div>
-      <button class="theme-toggle" id="themeBtn"><span class="nav-icon" id="themeIcon">☀</span>Toggle Theme</button>
-      <button class="sidebar-btn" id="logout-btn"><span class="nav-icon">⏎</span>Sign Out</button>
-    </div>
+    
   </aside>
 
   <div class="main">
@@ -419,12 +417,79 @@
         <div class="games-grid" id="grid-all"></div>
       </div>
 
+
+      <!-- Profile -->
+      <div class="page" id="page-profile">
+        <div class="settings-section" style="max-width:600px">
+          <h3>Profile</h3>
+
+          <!-- Avatar -->
+          <div class="settings-row" style="align-items:flex-start;padding-bottom:20px">
+            <div>
+              <div class="settings-label">Avatar</div>
+              <div class="settings-desc">Upload a photo or paste an image URL</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <div id="profile-avatar-preview" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c47fff);display:grid;place-items:center;font-size:1.8rem;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;cursor:pointer" title="Click to upload photo"></div>
+              <input type="file" id="profile-avatar-file" accept="image/*" style="display:none"/>
+              <div style="display:flex;gap:6px;align-items:center;width:200px">
+                <button class="btn btn-ghost btn-sm" id="avatar-upload-btn" style="flex-shrink:0">📁 Upload</button>
+                <span style="font-size:.75rem;color:var(--text3)">or</span>
+                <input class="form-input" id="profile-avatar-url" placeholder="Paste URL…" style="flex:1;font-size:.8rem;padding:7px 10px"/>
+              </div>
+              <button class="btn btn-primary btn-sm" id="save-avatar-btn">Save Avatar</button>
+            </div>
+          </div>
+
+          <!-- Display name -->
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Display Name</div>
+              <div class="settings-desc">Your username shown across the app</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="form-input" id="profile-username" placeholder="username" style="width:140px;font-size:.875rem;padding:8px 12px"/>
+              <button class="btn btn-ghost btn-sm" id="save-username-btn">Save</button>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Email</div>
+              <div class="settings-desc" id="profile-email-display">—</div>
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px">
+            <div>
+              <div class="settings-label">Change Password</div>
+              <div class="settings-desc">Leave blank to keep current password</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+              <input class="form-input" id="profile-current-pass" type="password" placeholder="Current password"/>
+              <input class="form-input" id="profile-new-pass" type="password" placeholder="New password"/>
+              <input class="form-input" id="profile-confirm-pass" type="password" placeholder="Confirm new password"/>
+              <div class="form-error" id="profile-pass-error"></div>
+              <button class="btn btn-primary btn-sm" id="save-password-btn" style="align-self:flex-start">Change Password</button>
+            </div>
+          </div>
+
+          <div class="form-success" id="profile-success" style="display:none;padding:8px 0"></div>
+        </div>
+      </div>
+
       <!-- Settings -->
       <div class="page" id="page-settings">
         <div class="settings-section">
           <h3>Account</h3>
           <div class="settings-row">
             <div><div class="settings-label" id="s-username">—</div><div class="settings-desc" id="s-email">—</div></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-label">Sign Out</div><div class="settings-desc">Sign out of your account</div></div>
+            <button class="btn btn-sm btn-danger" id="logout-btn">Sign Out</button>
           </div>
         </div>
         <div class="settings-section">
@@ -622,7 +687,7 @@ let rawgSelected = null; // selected RAWG game data
 // ── Boot ──
 applyTheme();
 document.getElementById('dark-toggle').checked = isDark;
-document.getElementById('themeBtn').onclick = () => { setTheme(!isDark); };
+const _tb = document.getElementById('themeBtn'); if (_tb) _tb.addEventListener('click', function() { setTheme(!isDark); });
 document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => navigateTo(b.dataset.page)));
 document.getElementById('addGameBtn').onclick = () => openModal(null);
 
@@ -635,7 +700,7 @@ if (accessToken) {
 // ── Theme ──
 function applyTheme() {
   document.body.classList.toggle('light', !isDark);
-  document.getElementById('themeIcon').textContent = isDark ? '☀' : '🌙';
+const _ti = document.getElementById('themeIcon'); if (_ti) _ti.textContent = isDark ? '☀' : '🌙';
   const dt = document.getElementById('dark-toggle');
   if (dt) dt.checked = isDark;
 }
@@ -862,9 +927,10 @@ function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
-  const titles = {dashboard:'Dashboard',playing:'Now Playing',played:'Completed',toplay:'Backlog',all:'All Games',settings:'Settings'};
+  const titles = {dashboard:'Dashboard',playing:'Now Playing',played:'Completed',toplay:'Backlog',all:'All Games',settings:'Settings',profile:'Profile'};
   document.getElementById('page-title').textContent = titles[page] || page;
-  if (page !== 'dashboard') renderList(page);
+  if (page === 'profile') loadProfile();
+  else if (page !== 'dashboard') renderList(page);
   else renderDashboard();
 }
 
@@ -875,7 +941,8 @@ function renderAll() {
   const active = document.querySelector('.page.active');
   if (active) {
     const page = active.id.replace('page-','');
-    if (page !== 'dashboard') renderList(page);
+    if (page === 'profile') loadProfile();
+  else if (page !== 'dashboard') renderList(page);
   }
 }
 
@@ -909,6 +976,7 @@ function renderList(listId) {
   if (search) arr = arr.filter(g=>(g.title||'').toLowerCase().includes(search)||(g.platform||'').toLowerCase().includes(search));
   arr = getSorted(arr, listId);
   const grid = document.getElementById('grid-'+listId);
+  if (!grid) return;
   if (!arr.length) {
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🎮</div><h3>No games here yet</h3><p>Hit "+ Add Game" to get started</p></div>`;
     return;
@@ -1342,8 +1410,178 @@ function wireEvents() {
   });
 }
 
+  // Profile page
+  document.getElementById('save-avatar-btn')?.addEventListener('click', saveAvatar);
+
+  // Avatar file upload
+  const avatarFileInput = document.getElementById('profile-avatar-file');
+  const avatarUploadBtn = document.getElementById('avatar-upload-btn');
+  const avatarPreview = document.getElementById('profile-avatar-preview');
+
+  avatarUploadBtn?.addEventListener('click', () => avatarFileInput?.click());
+  avatarPreview?.addEventListener('click', () => avatarFileInput?.click());
+
+  avatarFileInput?.addEventListener('change', function() {
+    if (this.files && this.files[0]) handleAvatarFileUpload(this.files[0]);
+  });
+
+  // Drag and drop on avatar preview
+  avatarPreview?.addEventListener('dragover', (e) => { e.preventDefault(); avatarPreview.style.opacity = '0.7'; });
+  avatarPreview?.addEventListener('dragleave', () => { avatarPreview.style.opacity = '1'; });
+  avatarPreview?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    avatarPreview.style.opacity = '1';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleAvatarFileUpload(file);
+  });
+  document.getElementById('profile-avatar-url')?.addEventListener('input', previewProfileAvatar);
+  document.getElementById('save-username-btn')?.addEventListener('click', saveUsername);
+  document.getElementById('save-password-btn')?.addEventListener('click', savePassword);
+
+  // Sidebar user card -> navigate to profile
+  document.getElementById('sidebar-user-card')?.addEventListener('click', () => navigateTo('profile'));
+
+  // User chip menu toggle
+  const userChip = document.getElementById('user-chip');
+  const userMenu = document.getElementById('user-menu');
+  if (userChip && userMenu) {
+    userChip.addEventListener('click', () => {
+      const isOpen = userMenu.style.display === 'flex';
+      userMenu.style.display = isOpen ? 'none' : 'flex';
+      userMenu.style.flexDirection = 'column';
+      // Flip arrow
+      const arrow = userChip.querySelector('span:last-child');
+      if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+    });
+    // Close menu when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!userChip.contains(e.target) && !userMenu.contains(e.target)) {
+        userMenu.style.display = 'none';
+        const arrow = userChip.querySelector('span:last-child');
+        if (arrow) arrow.textContent = '▲';
+      }
+    });
+  }
+
 // Call wireEvents on DOM ready
 wireEvents();
+
+
+// ── Profile ──
+function setAvatarPreview(el, url, fallbackLetter) {
+  if (!el) return;
+  if (url) {
+    el.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    img.onerror = function() { el.textContent = fallbackLetter || '?'; };
+    el.appendChild(img);
+  } else {
+    el.innerHTML = '';
+    el.textContent = fallbackLetter || '?';
+  }
+}
+
+function handleAvatarFileUpload(file) {
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Image must be under 2MB', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    document.getElementById('profile-avatar-url').value = dataUrl;
+    const preview = document.getElementById('profile-avatar-preview');
+    const letter = (currentUser && currentUser.username) ? currentUser.username[0].toUpperCase() : '?';
+    setAvatarPreview(preview, dataUrl, letter);
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewProfileAvatar() {
+  const url = document.getElementById('profile-avatar-url').value.trim();
+  const preview = document.getElementById('profile-avatar-preview');
+  const letter = (currentUser && currentUser.username) ? currentUser.username[0].toUpperCase() : '?';
+  setAvatarPreview(preview, url, letter);
+}
+
+async function loadProfile() {
+  try {
+    const me = await api('/api/auth/me');
+    currentUser = me;
+    const letter = me.username ? me.username[0].toUpperCase() : '?';
+    const usernameEl = document.getElementById('profile-username');
+    const emailEl = document.getElementById('profile-email-display');
+    const preview = document.getElementById('profile-avatar-preview');
+    const avatarUrl = document.getElementById('profile-avatar-url');
+    if (usernameEl) usernameEl.value = me.username;
+    if (emailEl) emailEl.textContent = me.email;
+    if (avatarUrl) avatarUrl.value = me.avatar_url || '';
+    setAvatarPreview(preview, me.avatar_url, letter);
+  } catch(e) { console.error('loadProfile error', e); }
+}
+
+async function saveAvatar() {
+  const url = document.getElementById('profile-avatar-url').value.trim();
+  try {
+    await api('/api/auth/profile', 'PATCH', { avatar_url: url || null });
+    await updateSidebarUser();
+    showProfileSuccess('Avatar updated!');
+  } catch(e) { showProfileError(e.message); }
+}
+
+async function saveUsername() {
+  const username = document.getElementById('profile-username').value.trim();
+  if (!username) return;
+  try {
+    await api('/api/auth/profile', 'PATCH', { username });
+    await updateSidebarUser();
+    showProfileSuccess('Username updated!');
+  } catch(e) { showProfileError(e.message); }
+}
+
+async function savePassword() {
+  const current = document.getElementById('profile-current-pass').value;
+  const newPass = document.getElementById('profile-new-pass').value;
+  const confirm = document.getElementById('profile-confirm-pass').value;
+  const err = document.getElementById('profile-pass-error');
+  err.textContent = '';
+  if (!current || !newPass) { err.textContent = 'Please fill in all password fields'; return; }
+  if (newPass !== confirm) { err.textContent = 'New passwords do not match'; return; }
+  if (newPass.length < 8) { err.textContent = 'Password must be at least 8 characters'; return; }
+  try {
+    await api('/api/auth/profile', 'PATCH', { current_password: current, new_password: newPass });
+    document.getElementById('profile-current-pass').value = '';
+    document.getElementById('profile-new-pass').value = '';
+    document.getElementById('profile-confirm-pass').value = '';
+    showProfileSuccess('Password changed!');
+  } catch(e) { err.textContent = e.message; }
+}
+
+async function updateSidebarUser() {
+  try {
+    const me = await api('/api/auth/me');
+    currentUser = me;
+    const letter = me.username ? me.username[0].toUpperCase() : '?';
+    document.getElementById('user-name-display').textContent = me.username;
+    setAvatarPreview(document.getElementById('user-avatar'), me.avatar_url, letter);
+    document.getElementById('s-username').textContent = me.username;
+    document.getElementById('s-email').textContent = me.email;
+  } catch(e) {}
+}
+
+function showProfileSuccess(msg) {
+  const el = document.getElementById('profile-success');
+  if (el) { el.textContent = msg; el.style.display = 'block'; setTimeout(function() { el.style.display = 'none'; }, 3000); }
+}
+function showProfileError(msg) {
+  const el = document.getElementById('profile-pass-error');
+  if (el) el.textContent = msg;
+}
+
+let currentUser = null;
 
 // ── Service Worker ──
 if ('serviceWorker' in navigator) {

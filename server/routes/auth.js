@@ -305,4 +305,53 @@ function sanitizeUser(u) {
   return { id: u.id, username: u.username, email: u.email, avatar_url: u.avatar_url, created_at: u.created_at };
 }
 
+
+// ── Update profile ──
+router.patch('/profile', requireAuth, async (req, res) => {
+  try {
+    const { username, avatar_url, current_password, new_password } = req.body;
+    const updates = [];
+    const params = [];
+
+    if (username) {
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(username))
+        return res.status(400).json({ error: 'Username must be 3-30 alphanumeric characters or underscores' });
+      params.push(username);
+      updates.push(`username = $${params.length}`);
+    }
+
+    if (avatar_url !== undefined) {
+      params.push(avatar_url);
+      updates.push(`avatar_url = $${params.length}`);
+    }
+
+    if (new_password) {
+      if (!current_password)
+        return res.status(400).json({ error: 'Current password required' });
+      if (new_password.length < 8)
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+      const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+      const ok = await bcrypt.compare(current_password, rows[0].password_hash);
+      if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+      const hash = await bcrypt.hash(new_password, 12);
+      params.push(hash);
+      updates.push(`password_hash = $${params.length}`);
+    }
+
+    if (!updates.length)
+      return res.status(400).json({ error: 'Nothing to update' });
+
+    params.push(req.user.id);
+    const { rows } = await pool.query(
+      `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING id, username, email, avatar_url`,
+      params
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
+    console.error('Profile update error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 module.exports = router;
