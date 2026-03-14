@@ -282,7 +282,7 @@
         <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" />
       </div>
       <div class="form-error" id="login-error"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn" id="login-btn-el">Sign In</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn">Sign In</button>
     </div>
 
     <!-- Register form -->
@@ -300,7 +300,7 @@
         <input class="form-input" id="reg-pass" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
       </div>
       <div class="form-error" id="reg-error"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="reg-btn" id="reg-btn-el">Create Account</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="reg-btn">Create Account</button>
     </div>
   </div>
 </div>
@@ -319,7 +319,7 @@
       <input class="form-input code-input" id="tfa-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
     </div>
     <div class="form-error" id="tfa-error"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="tfa-btn" id="tfa-btn-el">Verify</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="tfa-btn">Verify</button>
     <div id="tfa-resend-wrap" style="display:none;margin-top:12px;text-align:center">
       <span class="auth-link" id="resend-otp-el">Resend code</span>
     </div>
@@ -1279,9 +1279,9 @@ function wireEvents() {
   document.getElementById('tab-register').addEventListener('click', () => switchAuthTab('register'));
 
   // Auth forms
-  document.getElementById('login-btn-el')?.addEventListener('click', doLogin);
-  document.getElementById('reg-btn-el')?.addEventListener('click', doRegister);
-  document.getElementById('tfa-btn-el')?.addEventListener('click', doVerify2FA);
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('reg-btn').addEventListener('click', doRegister);
+  document.getElementById('tfa-btn').addEventListener('click', doVerify2FA);
   document.getElementById('resend-otp-el')?.addEventListener('click', resendOTP);
   document.getElementById('logout-btn')?.addEventListener('click', doLogout);
 
