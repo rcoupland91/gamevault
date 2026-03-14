@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    name: Build, Push & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # needed to create GitHub Release
+      packages: write       # needed to push to GHCR
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # full history for changelog
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.VERSION }}" | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" | head -20)
+          else
+            COMMITS=$(git log ${PREV_TAG}..${{ steps.version.outputs.VERSION }} --pretty=format:"- %s")
+          fi
+          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.VERSION }}';
+            const image = '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}';
+            const commits = `${{ steps.changelog.outputs.COMMITS }}`;
+
+            const body = [
+              '## GameVault ' + version,
+              '',
+              '### Changes',
+              commits,
+              '',
+              '### Docker',
+              '```bash',
+              '# Pull and run with Docker Compose',
+              'docker pull ' + image + ':' + version,
+              '```',
+              '',
+              'Or update your existing install:',
+              '```bash',
+              'git pull',
+              'docker compose up -d --build',
+              '```',
+              '',
+              '### Self-Hosting',
+              'See [SETUP.md](https://github.com/${{ github.repository }}/blob/main/SETUP.md) for full setup instructions.',
+            ].join('\n');
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              name: 'GameVault ' + version,
+              body: body,
+              draft: false,
+              prerelease: version.includes('-'),
+            });
+
+            console.log('Release created: GameVault ' + version);
