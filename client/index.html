@@ -62,7 +62,7 @@
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
     /* Auth screens */
-    .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+    .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
     .auth-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:400px}
     .auth-logo{text-align:center;margin-bottom:28px}
     .auth-logo .logo-icon{width:52px;height:52px;border-radius:14px;font-size:24px;margin:0 auto 12px}
@@ -239,7 +239,7 @@
     .no-data{font-size:.82rem;color:var(--text3);text-align:center;padding:20px}
 
     /* Mobile bottom nav */
-    .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px 8px calc(8px + var(--safe-bot));z-index:50;gap:4px}
+    .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px 8px calc(8px + var(--safe-bot));z-index:50;gap:4px}.mob-nav.visible{display:flex}
     .mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:var(--radius-sm);cursor:pointer;font-size:.6rem;color:var(--text3);border:none;background:none;transition:all .15s;font-family:var(--font-body);font-weight:500}
     .mob-nav-item .mn-icon{font-size:1.3rem}
     .mob-nav-item.active{color:var(--accent2)}
@@ -248,7 +248,7 @@
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    @media(max-width:900px){.sidebar{display:none}.mob-nav{display:flex}.content{padding:20px 16px calc(80px + var(--safe-bot))}.topbar{padding:16px 20px}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.dash-row.thirds{grid-template-columns:1fr}.games-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
+    @media(max-width:900px){.sidebar{display:none}.mob-nav.visible{display:flex}.content{padding:20px 16px calc(80px + var(--safe-bot))}.topbar{padding:16px 20px}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.dash-row.thirds{grid-template-columns:1fr}.games-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
     @media(max-width:500px){.stats-grid{gap:10px}.stat-value{font-size:1.6rem}.games-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}.form-row{flex-direction:column}}
     .modal::-webkit-scrollbar{width:4px}.modal::-webkit-scrollbar-track{background:transparent}.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
   </style>
@@ -267,8 +267,8 @@
       <p>Your personal game library</p>
     </div>
     <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
-      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+      <button class="auth-tab active" id="tab-login">Sign In</button>
+      <button class="auth-tab" id="tab-register">Create Account</button>
     </div>
 
     <!-- Login form -->
@@ -282,7 +282,7 @@
         <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" />
       </div>
       <div class="form-error" id="login-error"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn" onclick="doLogin()">Sign In</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn" id="login-btn-el">Sign In</button>
     </div>
 
     <!-- Register form -->
@@ -300,7 +300,7 @@
         <input class="form-input" id="reg-pass" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
       </div>
       <div class="form-error" id="reg-error"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="reg-btn" onclick="doRegister()">Create Account</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="reg-btn" id="reg-btn-el">Create Account</button>
     </div>
   </div>
 </div>
@@ -319,9 +319,9 @@
       <input class="form-input code-input" id="tfa-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
     </div>
     <div class="form-error" id="tfa-error"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="tfa-btn" onclick="doVerify2FA()">Verify</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="tfa-btn" id="tfa-btn-el">Verify</button>
     <div id="tfa-resend-wrap" style="display:none;margin-top:12px;text-align:center">
-      <span class="auth-link" onclick="resendOTP()">Resend code</span>
+      <span class="auth-link" id="resend-otp-el">Resend code</span>
     </div>
   </div>
 </div>
@@ -348,7 +348,7 @@
         <div class="sync-dot" id="sync-dot" title="Synced"></div>
       </div>
       <button class="theme-toggle" id="themeBtn"><span class="nav-icon" id="themeIcon">☀</span>Toggle Theme</button>
-      <button class="sidebar-btn" onclick="doLogout()"><span class="nav-icon">⏎</span>Sign Out</button>
+      <button class="sidebar-btn" id="logout-btn"><span class="nav-icon">⏎</span>Sign Out</button>
     </div>
   </aside>
 
@@ -377,10 +377,10 @@
       <!-- Playing -->
       <div class="page" id="page-playing">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-playing" oninput="renderList('playing')"/>
-          <button class="filter-chip active" onclick="setSort('playing','recent',this)">Recent</button>
-          <button class="filter-chip" onclick="setSort('playing','alpha',this)">A–Z</button>
-          <button class="filter-chip" onclick="setSort('playing','rating',this)">Rating</button>
+          <input class="search-input" placeholder="Search…" id="search-playing" id="search-playing"/>
+          <button class="filter-chip active" data-list="playing" data-sort="recent">Recent</button>
+          <button class="filter-chip" data-list="playing" data-sort="alpha">A–Z</button>
+          <button class="filter-chip" data-list="playing" data-sort="rating">Rating</button>
         </div>
         <div class="games-grid" id="grid-playing"></div>
       </div>
@@ -388,11 +388,11 @@
       <!-- Played -->
       <div class="page" id="page-played">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-played" oninput="renderList('played')"/>
-          <button class="filter-chip active" onclick="setSort('played','recent',this)">Recent</button>
-          <button class="filter-chip" onclick="setSort('played','alpha',this)">A–Z</button>
-          <button class="filter-chip" onclick="setSort('played','rating',this)">Rating</button>
-          <button class="filter-chip" onclick="setSort('played','hours',this)">Hours</button>
+          <input class="search-input" placeholder="Search…" id="search-played" id="search-played"/>
+          <button class="filter-chip active" data-list="played" data-sort="recent">Recent</button>
+          <button class="filter-chip" data-list="played" data-sort="alpha">A–Z</button>
+          <button class="filter-chip" data-list="played" data-sort="rating">Rating</button>
+          <button class="filter-chip" data-list="played" data-sort="hours">Hours</button>
         </div>
         <div class="games-grid" id="grid-played"></div>
       </div>
@@ -400,9 +400,9 @@
       <!-- Backlog -->
       <div class="page" id="page-toplay">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-toplay" oninput="renderList('toplay')"/>
-          <button class="filter-chip active" onclick="setSort('toplay','recent',this)">Recent</button>
-          <button class="filter-chip" onclick="setSort('toplay','alpha',this)">A–Z</button>
+          <input class="search-input" placeholder="Search…" id="search-toplay" id="search-toplay"/>
+          <button class="filter-chip active" data-list="toplay" data-sort="recent">Recent</button>
+          <button class="filter-chip" data-list="toplay" data-sort="alpha">A–Z</button>
         </div>
         <div class="games-grid" id="grid-toplay"></div>
       </div>
@@ -410,11 +410,11 @@
       <!-- All -->
       <div class="page" id="page-all">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-all" oninput="renderList('all')"/>
-          <button class="filter-chip active" onclick="setSort('all','recent',this)">Recent</button>
-          <button class="filter-chip" onclick="setSort('all','alpha',this)">A–Z</button>
-          <button class="filter-chip" onclick="setSort('all','rating',this)">Rating</button>
-          <button class="filter-chip" onclick="setSort('all','hours',this)">Hours</button>
+          <input class="search-input" placeholder="Search…" id="search-all" id="search-all"/>
+          <button class="filter-chip active" data-list="all" data-sort="recent">Recent</button>
+          <button class="filter-chip" data-list="all" data-sort="alpha">A–Z</button>
+          <button class="filter-chip" data-list="all" data-sort="rating">Rating</button>
+          <button class="filter-chip" data-list="all" data-sort="hours">Hours</button>
         </div>
         <div class="games-grid" id="grid-all"></div>
       </div>
@@ -436,7 +436,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <span id="totp-status" style="font-size:.78rem;color:var(--text3)">—</span>
-              <button class="btn btn-sm btn-ghost" id="totp-btn" onclick="toggleTOTP()">Set up</button>
+              <button class="btn btn-sm btn-ghost" id="totp-btn" id="totp-btn">Set up</button>
             </div>
           </div>
           <div class="settings-row">
@@ -445,7 +445,7 @@
               <div class="settings-desc">Receive a code by email when signing in</div>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="email-otp-toggle" onchange="toggleEmailOTP(this.checked)"/>
+              <input type="checkbox" id="email-otp-toggle" id="email-otp-toggle"/>
               <span class="toggle-track"></span>
             </label>
           </div>
@@ -455,7 +455,7 @@
           <div class="settings-row">
             <div><div class="settings-label">Dark Mode</div><div class="settings-desc">Toggle between dark and light theme</div></div>
             <label class="toggle-switch">
-              <input type="checkbox" id="dark-toggle" onchange="setTheme(this.checked)"/>
+              <input type="checkbox" id="dark-toggle" id="dark-toggle"/>
               <span class="toggle-track"></span>
             </label>
           </div>
@@ -464,7 +464,7 @@
           <h3>Data</h3>
           <div class="settings-row">
             <div><div class="settings-label">Export Library</div><div class="settings-desc">Download your games as JSON</div></div>
-            <button class="btn btn-sm btn-ghost" onclick="exportGames()">Export</button>
+            <button class="btn btn-sm btn-ghost" id="export-btn">Export</button>
           </div>
         </div>
       </div>
@@ -474,7 +474,7 @@
 </div>
 
 <!-- Mobile Nav -->
-<nav class="mob-nav" id="mob-nav" style="display:none">
+<nav class="mob-nav" id="mob-nav">
   <button class="mob-nav-item active" data-page="dashboard"><span class="mn-icon">⬡</span>Dash</button>
   <button class="mob-nav-item" data-page="playing"><span class="mn-icon">▶</span>Playing</button>
   <button class="mob-nav-item" data-page="played"><span class="mn-icon">✓</span>Done</button>
@@ -483,7 +483,7 @@
 </nav>
 
 <!-- Add/Edit Game Modal -->
-<div class="overlay" id="modal-overlay" style="display:none" onclick="handleOverlayClick(event)">
+<div class="overlay" id="modal-overlay" style="display:none" id="modal-overlay">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-content">
@@ -493,8 +493,8 @@
         <div class="form-group" style="margin-bottom:8px">
           <label style="font-size:.78rem;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Search RAWG for a game</label>
           <div style="display:flex;gap:8px">
-            <input class="field" id="rawg-search" placeholder="Search by title…" oninput="debounceSearch()" style="flex:1"/>
-            <button class="btn btn-ghost btn-sm" onclick="clearSearch()">Clear</button>
+            <input class="field" id="rawg-search" placeholder="Search by title…" id="rawg-search" style="flex:1"/>
+            <button class="btn btn-ghost btn-sm" id="clear-search-btn">Clear</button>
           </div>
         </div>
         <div id="rawg-results"></div>
@@ -516,7 +516,7 @@
       </div>
 
       <div class="form-row">
-        <div class="form-col"><label>Title</label><input class="field" id="field-title" placeholder="Game title…" oninput="document.getElementById('modal-game-title').textContent=this.value||'New Game'"/></div>
+        <div class="form-col"><label>Title</label><input class="field" id="field-title" placeholder="Game title…" id="field-title"/></div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -540,15 +540,15 @@
         <div class="form-col"><label>Publisher</label><input class="field" id="field-publisher" placeholder="Publisher…"/></div>
       </div>
       <div class="form-row">
-        <div class="form-col"><label>Artwork URL</label><input class="field" id="field-art" placeholder="https://… (auto-filled from search)" oninput="previewArt()"/></div>
+        <div class="form-col"><label>Artwork URL</label><input class="field" id="field-art" placeholder="https://… (auto-filled from search)" id="field-art"/></div>
       </div>
 
       <div style="margin-bottom:14px">
         <label style="font-size:.78rem;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">Status</label>
         <div class="status-row">
-          <button class="status-btn" id="sb-playing" onclick="selectStatus('playing')">▶ Playing</button>
-          <button class="status-btn sel-toplay" id="sb-played" onclick="selectStatus('played')">✓ Completed</button>
-          <button class="status-btn" id="sb-toplay" onclick="selectStatus('toplay')">🔖 Backlog</button>
+          <button class="status-btn" id="sb-playing" id="sb-playing">▶ Playing</button>
+          <button class="status-btn sel-toplay" id="sb-played" id="sb-played">✓ Completed</button>
+          <button class="status-btn" id="sb-toplay" id="sb-toplay">🔖 Backlog</button>
         </div>
       </div>
 
@@ -563,16 +563,16 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" id="save-btn" onclick="saveGame()">Save Game</button>
-        <button class="btn btn-danger" id="deleteBtn" onclick="deleteGame()" style="display:none">Delete</button>
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" id="save-btn" id="save-btn">Save Game</button>
+        <button class="btn btn-danger" id="deleteBtn" id="deleteBtn" style="display:none">Delete</button>
+        <button class="btn btn-ghost" id="close-modal-btn">Cancel</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- TOTP Setup Modal -->
-<div class="overlay" id="totp-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="overlay" id="totp-overlay" style="display:none" id="totp-overlay">
   <div class="modal" style="max-width:480px">
     <div class="modal-handle"></div>
     <div class="modal-content">
@@ -586,13 +586,13 @@
           <input class="form-input code-input" id="totp-confirm-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000"/>
         </div>
         <div class="form-error" id="totp-error"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="confirmTOTP()">Enable TOTP</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" id="confirm-totp-btn">Enable TOTP</button>
       </div>
       <div id="totp-backup-view" style="display:none">
         <h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;margin-bottom:8px">✅ TOTP Enabled!</h3>
         <p style="font-size:.85rem;color:var(--text2);margin-bottom:16px">Save these backup codes somewhere safe. Each can be used once if you lose access to your authenticator app.</p>
         <div class="backup-codes" id="backup-codes"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px" onclick="document.getElementById('totp-overlay').style.display='none';loadTFAStatus()">Done</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px" id="totp-done-btn">Done</button>
       </div>
     </div>
   </div>
@@ -649,22 +649,20 @@ function setTheme(dark) {
 function showAuthScreen() {
   document.getElementById('auth-screen').style.display = 'grid';
   document.getElementById('app').style.display = 'none';
-  document.getElementById('mob-nav').style.display = 'none';
+  document.getElementById('mob-nav').classList.remove('visible');
   document.getElementById('tfa-screen').style.display = 'none';
 }
 function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('tfa-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  document.getElementById('mob-nav').style.display = 'flex';
+  document.getElementById('mob-nav').classList.add('visible');
 }
 
 function switchAuthTab(tab) {
-  // Update tab button styles
-  document.querySelectorAll('.auth-tab').forEach(t => {
-    t.classList.toggle('active', t.getAttribute('onclick').includes("'" + tab + "'"));
-  });
-  // Show/hide forms
+  const tabs = document.querySelectorAll('.auth-tab');
+  tabs[0].classList.toggle('active', tab === 'login');
+  tabs[1].classList.toggle('active', tab === 'register');
   document.getElementById('login-form').style.display    = tab === 'login'    ? 'block' : 'none';
   document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
 }
@@ -1272,6 +1270,80 @@ function toast(msg, type = 'info') {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+
+// ── Wire up all event listeners (replaces inline onclick handlers) ──
+function wireEvents() {
+  // Auth tabs
+  document.getElementById('tab-login').addEventListener('click', () => switchAuthTab('login'));
+  document.getElementById('tab-register').addEventListener('click', () => switchAuthTab('register'));
+
+  // Auth forms
+  document.getElementById('login-btn-el')?.addEventListener('click', doLogin);
+  document.getElementById('reg-btn-el')?.addEventListener('click', doRegister);
+  document.getElementById('tfa-btn-el')?.addEventListener('click', doVerify2FA);
+  document.getElementById('resend-otp-el')?.addEventListener('click', resendOTP);
+  document.getElementById('logout-btn')?.addEventListener('click', doLogout);
+
+  // Search inputs
+  ['playing','played','toplay','all'].forEach(list => {
+    const el = document.getElementById('search-' + list);
+    if (el) el.addEventListener('input', () => renderList(list));
+  });
+
+  // Sort chips
+  document.querySelectorAll('.filter-chip[data-list]').forEach(chip => {
+    chip.addEventListener('click', function() {
+      setSort(this.dataset.list, this.dataset.sort, this);
+    });
+  });
+
+  // Settings
+  document.getElementById('totp-btn')?.addEventListener('click', toggleTOTP);
+  document.getElementById('email-otp-toggle')?.addEventListener('change', function() { toggleEmailOTP(this.checked); });
+  document.getElementById('dark-toggle')?.addEventListener('change', function() { setTheme(this.checked); });
+  document.getElementById('export-btn')?.addEventListener('click', exportGames);
+
+  // Modal overlay click outside
+  document.getElementById('modal-overlay')?.addEventListener('click', handleOverlayClick);
+
+  // TOTP overlay click outside
+  document.getElementById('totp-overlay')?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+
+  // Modal search
+  document.getElementById('rawg-search')?.addEventListener('input', debounceSearch);
+  document.getElementById('clear-search-btn')?.addEventListener('click', clearSearch);
+
+  // Modal title preview
+  document.getElementById('field-title')?.addEventListener('input', function() {
+    document.getElementById('modal-game-title').textContent = this.value || 'New Game';
+  });
+
+  // Art preview
+  document.getElementById('field-art')?.addEventListener('input', previewArt);
+
+  // Status buttons
+  document.getElementById('sb-playing')?.addEventListener('click', () => selectStatus('playing'));
+  document.getElementById('sb-played')?.addEventListener('click', () => selectStatus('played'));
+  document.getElementById('sb-toplay')?.addEventListener('click', () => selectStatus('toplay'));
+
+  // Modal actions
+  document.getElementById('save-btn')?.addEventListener('click', saveGame);
+  document.getElementById('deleteBtn')?.addEventListener('click', deleteGame);
+  document.getElementById('close-modal-btn')?.addEventListener('click', closeModal);
+
+  // TOTP buttons
+  document.getElementById('confirm-totp-btn')?.addEventListener('click', confirmTOTP);
+  document.getElementById('totp-done-btn')?.addEventListener('click', () => {
+    document.getElementById('totp-overlay').style.display = 'none';
+    loadTFAStatus();
+  });
+}
+
+// Call wireEvents on DOM ready
+wireEvents();
 
 // ── Service Worker ──
 if ('serviceWorker' in navigator) {

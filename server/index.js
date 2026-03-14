@@ -10,16 +10,7 @@ const app = express();
 
 // ── Security ──
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      imgSrc:     ["'self'", 'data:', 'https:', 'blob:'],
-      scriptSrc:  ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
-      fontSrc:    ["'self'", 'https://fonts.gstatic.com'],
-      connectSrc: ["'self'"],
-    }
-  }
+  contentSecurityPolicy: false
 }));
 
 app.use(cors({
