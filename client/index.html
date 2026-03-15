@@ -264,10 +264,9 @@
 <div class="auth-screen" id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
-      <img src="/logo.png" alt="GameVault" style="width:220px;height:auto;object-fit:contain;margin:0 auto 16px;display:block" onerror="this.style.display='none'"/>
+      <img src="/logo.png" alt="GameVault" style="width:220px;height:auto;object-fit:contain;margin:0 auto 16px;display:block;mix-blend-mode:screen" onerror="this.style.display='none'"/>
+      <h2>GameVault</h2>
       <p>Your personal game library</p>
-      
-      
     </div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login">Sign In</button>
@@ -290,6 +289,12 @@
 
     <!-- Register form -->
     <div id="register-form" style="display:none">
+      <div id="signups-disabled-msg" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:2rem;margin-bottom:12px">🔒</div>
+        <div style="font-weight:600;margin-bottom:6px;color:var(--text)">Signups are disabled</div>
+        <div style="font-size:.85rem;color:var(--text2)">New account registration is currently closed. Please contact the administrator.</div>
+      </div>
+      <div id="register-fields">
       <div class="form-group">
         <label>Username</label>
         <input class="form-input" id="reg-user" type="text" placeholder="your_username" autocomplete="username" />
@@ -304,6 +309,7 @@
       </div>
       <div class="form-error" id="reg-error"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="reg-btn">Create Account</button>
+      </div><!-- end register-fields -->
     </div>
   </div>
 </div>
@@ -312,7 +318,7 @@
 <div class="auth-screen" id="tfa-screen" style="display:none">
   <div class="auth-box">
     <div class="auth-logo">
-      <img src="/logo.png" alt="GameVault" style="width:180px;height:auto;object-fit:contain;margin:0 auto 12px;display:block" onerror="this.style.display='none'"/>
+      <img src="/logo.png" alt="GameVault" style="width:180px;height:auto;object-fit:contain;margin:0 auto 12px;display:block;mix-blend-mode:screen" onerror="this.style.display='none'"/>
       <h2>Two-Factor Auth</h2>
       <p>Enter your verification code</p>
     </div>
@@ -493,6 +499,26 @@
           <div class="settings-row">
             <div><div class="settings-label">Sign Out</div><div class="settings-desc">Sign out of your account</div></div>
             <button class="btn btn-sm btn-danger" id="logout-btn">Sign Out</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Registration</h3>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Allow New Signups</div>
+              <div class="settings-desc">When disabled, the Create Account form shows a closed message</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="signups-toggle" checked/>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="settings-row" id="signup-link-row">
+            <div>
+              <div class="settings-label">Signup Link</div>
+              <div class="settings-desc">Share this link to let people register</div>
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="copySignupLink()">Copy Link</button>
           </div>
         </div>
         <div class="settings-section">
@@ -690,6 +716,7 @@ let rawgSelected = null; // selected RAWG game data
 // ── Boot ──
 applyTheme();
 document.getElementById('dark-toggle').checked = isDark;
+loadSignupState();
 const _tb = document.getElementById('themeBtn'); if (_tb) _tb.addEventListener('click', function() { setTheme(!isDark); });
 document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => navigateTo(b.dataset.page)));
 document.getElementById('addGameBtn').onclick = () => openModal(null);
@@ -1416,6 +1443,10 @@ function wireEvents() {
   // Profile page
   document.getElementById('save-avatar-btn')?.addEventListener('click', saveAvatar);
 
+  // Signup toggle
+  document.getElementById('signups-toggle')?.addEventListener('change', function() { toggleSignups(this.checked); });
+  loadSignupState();
+
   // Avatar file upload
   const avatarFileInput = document.getElementById('profile-avatar-file');
   const avatarUploadBtn = document.getElementById('avatar-upload-btn');
@@ -1585,6 +1616,56 @@ function showProfileError(msg) {
 }
 
 let currentUser = null;
+
+
+// ── Signup settings ──
+let signupsEnabled = true;
+
+async function loadSignupState() {
+  try {
+    const res = await fetch('/api/settings/public');
+    const data = await res.json();
+    signupsEnabled = data.signups_enabled !== false;
+    const toggle = document.getElementById('signups-toggle');
+    if (toggle) toggle.checked = signupsEnabled;
+  } catch(e) { signupsEnabled = true; }
+}
+
+async function toggleSignups(enabled) {
+  try {
+    await api('/api/settings', 'PATCH', { key: 'signups_enabled', value: enabled ? 'true' : 'false' });
+    signupsEnabled = enabled;
+    toast(enabled ? 'Signups enabled' : 'Signups disabled', 'success');
+  } catch(e) {
+    toast(e.message, 'error');
+    const toggle = document.getElementById('signups-toggle');
+    if (toggle) toggle.checked = !enabled;
+  }
+}
+
+function copySignupLink() {
+  const url = window.location.origin;
+  navigator.clipboard.writeText(url).then(() => toast('Link copied!', 'success'));
+}
+
+function applySignupUI() {
+  const disabled = document.getElementById('signups-disabled-msg');
+  const fields   = document.getElementById('register-fields');
+  if (!signupsEnabled) {
+    if (disabled) disabled.style.display = 'block';
+    if (fields)   fields.style.display   = 'none';
+  } else {
+    if (disabled) disabled.style.display = 'none';
+    if (fields)   fields.style.display   = 'block';
+  }
+}
+
+// Patch applySignupUI into tab switching
+const _origSwitchAuthTab = switchAuthTab;
+switchAuthTab = function(tab) {
+  _origSwitchAuthTab(tab);
+  if (tab === 'register') applySignupUI();
+};
 
 // ── Service Worker ──
 if ('serviceWorker' in navigator) {

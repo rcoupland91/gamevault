@@ -78,6 +78,16 @@ CREATE TABLE IF NOT EXISTS games (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- App settings (server-wide)
+CREATE TABLE IF NOT EXISTS app_settings (
+  key   VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Default settings
+INSERT INTO app_settings (key, value) VALUES ('signups_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_status  ON games(user_id, status);

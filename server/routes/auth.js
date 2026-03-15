@@ -14,6 +14,14 @@ const otpLimiter  = rateLimit({ windowMs: 5  * 60 * 1000, max: 5,  message: { er
 // ── Register ──
 router.post('/register', authLimiter, async (req, res) => {
   try {
+    // Check if signups are enabled
+    const { rows: settingRows } = await pool.query(
+      "SELECT value FROM app_settings WHERE key = 'signups_enabled'"
+    );
+    if (settingRows[0]?.value === 'false') {
+      return res.status(403).json({ error: 'Signups are currently disabled' });
+    }
+
     const { username, email, password } = req.body;
     if (!username || !email || !password)
       return res.status(400).json({ error: 'username, email, and password required' });

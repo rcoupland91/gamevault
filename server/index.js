@@ -7,7 +7,6 @@ const path       = require('path');
 const { setupDatabase } = require('./db/setup');
 
 const app = express();
-app.set('trust proxy', 1);
 
 // ── Security ──
 app.use(helmet({
@@ -29,6 +28,7 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/games', require('./routes/games'));
 app.use('/api/rawg', require('./routes/rawg'));
+app.use('/api/settings', require('./routes/settings'));
 
 // ── Health check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
