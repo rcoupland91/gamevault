@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-title" content="GameVault"/>
   <meta name="theme-color" content="#0f0f13"/>
   <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
   <title>GameVault</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
@@ -262,7 +264,7 @@
 <div class="auth-screen" id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="logo-icon">🎮</div>
+      <img src="/logo.png" alt="GameVault" style="width:220px;height:auto;object-fit:contain;margin:0 auto 16px;display:block" onerror="this.style.display='none'"/>
       <h2>GameVault</h2>
       <p>Your personal game library</p>
     </div>
@@ -309,7 +311,7 @@
 <div class="auth-screen" id="tfa-screen" style="display:none">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="logo-icon">🔐</div>
+      <img src="/logo.png" alt="GameVault" style="width:180px;height:auto;object-fit:contain;margin:0 auto 12px;display:block" onerror="this.style.display='none'"/>
       <h2>Two-Factor Auth</h2>
       <p>Enter your verification code</p>
     </div>
@@ -330,7 +332,7 @@
 <div id="app" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">🎮</div>
+      <img src="/logo-icon.png" alt="GameVault" style="width:36px;height:auto;border-radius:6px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'"/>
       GameVault
     </div>
     <div style="display:flex;align-items:center;gap:8px;padding:0 12px 10px;border-bottom:1px solid var(--border);margin-bottom:8px;cursor:pointer" id="sidebar-user-card" title="Edit profile">
