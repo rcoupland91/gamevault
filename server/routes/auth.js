@@ -1,8 +1,8 @@
+const crypto   = require('crypto');
 const router   = require('express').Router();
 const bcrypt   = require('bcryptjs');
 const speakeasy = require('speakeasy');
 const QRCode   = require('qrcode');
-const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../db/setup');
 const { issueTokens, requireAuth } = require('../middleware/auth');
 const { sendOTPEmail } = require('../utils/email');
@@ -134,9 +134,13 @@ router.post('/2fa/verify', otpLimiter, async (req, res) => {
         `SELECT * FROM otp_codes WHERE user_id = $1 AND purpose = 'login_2fa' AND used = FALSE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1`,
         [payload.sub]
       );
-      if (otpRows.length && otpRows[0].code === code) {
-        valid = true;
-        await pool.query('UPDATE otp_codes SET used = TRUE WHERE id = $1', [otpRows[0].id]);
+      if (otpRows.length) {
+        const storedBuf = Buffer.from(otpRows[0].code);
+        const inputBuf  = Buffer.from(code);
+        if (storedBuf.length === inputBuf.length && crypto.timingSafeEqual(storedBuf, inputBuf)) {
+          valid = true;
+          await pool.query('UPDATE otp_codes SET used = TRUE WHERE id = $1', [otpRows[0].id]);
+        }
       }
     }
 
@@ -196,9 +200,10 @@ router.post('/2fa/totp/confirm', requireAuth, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Invalid code — check your authenticator app' });
 
     // Generate backup codes
-    const backupCodes = Array.from({ length: 8 }, () =>
-      Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase()
-    );
+    const backupCodes = Array.from({ length: 8 }, () => {
+      const hex = crypto.randomBytes(4).toString('hex').toUpperCase();
+      return `${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
+    });
     const hashed = await Promise.all(backupCodes.map(c => bcrypt.hash(c, 10)));
 
     await pool.query(
@@ -281,7 +286,7 @@ router.post('/logout', requireAuth, async (req, res) => {
 // ── Get current user ──
 router.get('/me', requireAuth, async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT u.id, u.username, u.email, u.avatar_url, u.created_at,
+    `SELECT u.id, u.username, u.email, u.avatar_url, u.is_admin, u.created_at,
             f.totp_enabled, f.email_otp_enabled
      FROM users u LEFT JOIN user_2fa f ON f.user_id = u.id WHERE u.id = $1`,
     [req.user.id]
@@ -301,7 +306,7 @@ async function storeRefreshToken(userId, token) {
 }
 
 async function sendEmailOTP(userId, email, username, purpose) {
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = crypto.randomInt(100000, 1000000).toString();
   const expires = new Date(Date.now() + 10 * 60 * 1000);
   // Invalidate previous codes
   await pool.query(`UPDATE otp_codes SET used = TRUE WHERE user_id = $1 AND purpose = $2 AND used = FALSE`, [userId, purpose]);
@@ -329,7 +334,9 @@ router.patch('/profile', requireAuth, async (req, res) => {
     }
 
     if (avatar_url !== undefined) {
-      params.push(avatar_url);
+      if (avatar_url && !/^https?:\/\/.+/.test(avatar_url))
+        return res.status(400).json({ error: 'Avatar URL must start with http:// or https://' });
+      params.push(avatar_url || null);
       updates.push(`avatar_url = $${params.length}`);
     }
 

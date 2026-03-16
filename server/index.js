@@ -10,7 +10,18 @@ const app = express();
 
 // ── Security ──
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'"],
+      styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc:     ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc:    ["'self'", "https://fonts.gstatic.com"],
+      objectSrc:  ["'none'"],
+      frameSrc:   ["'none'"],
+    },
+  },
 }));
 
 app.use(cors({
@@ -29,6 +40,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/games', require('./routes/games'));
 app.use('/api/rawg', require('./routes/rawg'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/admin', require('./routes/admin'));
 
 // ── Health check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));

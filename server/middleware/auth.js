@@ -13,7 +13,7 @@ async function requireAuth(req, res, next) {
 
     // Check user still exists
     const { rows } = await pool.query(
-      'SELECT id, username, email FROM users WHERE id = $1', [payload.sub]
+      'SELECT id, username, email, is_admin FROM users WHERE id = $1', [payload.sub]
     );
     if (!rows.length) return res.status(401).json({ error: 'User not found' });
 
@@ -42,4 +42,9 @@ function issueTokens(userId) {
   return { access, refresh };
 }
 
-module.exports = { requireAuth, issueTokens };
+function requireAdmin(req, res, next) {
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin access required' });
+  next();
+}
+
+module.exports = { requireAuth, requireAdmin, issueTokens };
