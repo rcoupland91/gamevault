@@ -265,7 +265,7 @@
   <div class="auth-box">
     <div class="auth-logo">
       <img src="/logo.png" alt="GameVault" style="width:220px;height:auto;object-fit:contain;margin:0 auto 16px;display:block;mix-blend-mode:screen" onerror="this.style.display='none'"/>
-      <h2>GameVault</h2>
+      
       <p>Your personal game library</p>
     </div>
     <div class="auth-tabs">
@@ -281,7 +281,7 @@
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" id2="login-pass-enter"/>
       </div>
       <div class="form-error" id="login-error"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn">Sign In</button>
@@ -1378,6 +1378,10 @@ function wireEvents() {
 
   // Auth forms
   document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-pass').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-user').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+  document.getElementById('reg-pass').addEventListener('keydown', function(e) { if(e.key==='Enter') doRegister(); });
+  document.getElementById('tfa-code').addEventListener('keydown', function(e) { if(e.key==='Enter') doVerify2FA(); });
   document.getElementById('reg-btn').addEventListener('click', doRegister);
   document.getElementById('tfa-btn').addEventListener('click', doVerify2FA);
   document.getElementById('resend-otp-el')?.addEventListener('click', resendOTP);
