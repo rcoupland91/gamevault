@@ -39,7 +39,7 @@ No git clone needed. Docker pulls the pre-built image directly from GitHub Conta
 ### 1. Download the environment template
 
 ```bash
-curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/.env.example
+curl -O https://raw.githubusercontent.com/rcoupland91/gamevault/main/.env.example
 cp .env.example .env
 ```
 
@@ -71,13 +71,13 @@ Run it twice — one for `JWT_SECRET`, one for `REFRESH_TOKEN_SECRET`.
 ### 3. Download the compose file and start
 
 ```bash
-curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/docker-compose.image.yml
+curl -O https://raw.githubusercontent.com/rcoupland91/gamevault/main/docker-compose.image.yml
 docker compose -f docker-compose.image.yml up -d
 ```
 
 Docker pulls Postgres and the GameVault image, runs the schema setup, and starts everything. The app is at **http://your-server-ip:3000**.
 
-> **Tip:** Each [GitHub Release](https://github.com/OWNER/gamevault/releases) includes a ready-to-paste `docker-compose.yml` pinned to that exact version — no manual image tag editing needed.
+> **Tip:** Each [GitHub Release](https://github.com/rcoupland91/gamevault/releases) includes a ready-to-paste `docker-compose.yml` pinned to that exact version — no manual image tag editing needed.
 
 ---
 
@@ -98,7 +98,7 @@ If you want to modify the code or run from source:
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/OWNER/gamevault.git
+git clone https://github.com/rcoupland91/gamevault.git
 cd gamevault
 ```
 

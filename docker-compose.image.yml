@@ -3,7 +3,7 @@
 # The app image is pulled from GitHub Container Registry (GHCR).
 #
 # Quick start:
-#   1. curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/.env.example
+#   1. curl -O https://raw.githubusercontent.com/rcoupland91/gamevault/main/.env.example
 #   2. cp .env.example .env  (then fill in your values)
 #   3. docker compose -f docker-compose.image.yml up -d
 
@@ -30,7 +30,7 @@ services:
 
   # ── GameVault App ──
   app:
-    image: ${GAMEVAULT_IMAGE:-ghcr.io/OWNER/gamevault:latest}
+    image: ${GAMEVAULT_IMAGE:-ghcr.io/rcoupland91/gamevault:latest}
     container_name: gamevault-app
     restart: unless-stopped
     depends_on:
