@@ -1,0 +1,109 @@
+name: Auto Tag on Merge to Main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  tag:
+    name: Bump version and tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          LATEST=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$LATEST" ]; then
+            LATEST="v0.0.0"
+          fi
+          echo "LATEST=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST"
+
+      - name: Determine bump type
+        id: bump
+        run: |
+          # If manually triggered, use the input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP="${{ github.event.inputs.bump }}"
+            echo "Manual trigger — bump type: $BUMP"
+          else
+            # Auto-detect from commit messages
+            LATEST="${{ steps.latest_tag.outputs.LATEST }}"
+            if [ "$LATEST" = "v0.0.0" ]; then
+              COMMITS=$(git log --pretty=format:"%s" | head -20)
+            else
+              COMMITS=$(git log ${LATEST}..HEAD --pretty=format:"%s")
+            fi
+
+            echo "Commits since last tag:"
+            echo "$COMMITS"
+
+            # major: BREAKING CHANGE, feat!:, major:
+            # minor: feat:, minor:
+            # patch: fix:, chore:, docs:, style:, refactor:, perf:, test:, patch:
+            if echo "$COMMITS" | grep -qiE '(BREAKING CHANGE|feat!:|major:)'; then
+              BUMP="major"
+            elif echo "$COMMITS" | grep -qiE '^(feat|minor)(\(.+\))?:'; then
+              BUMP="minor"
+            elif echo "$COMMITS" | grep -qiE '^(fix|patch|chore|docs|style|refactor|perf|test)(\(.+\))?:'; then
+              BUMP="patch"
+            else
+              # Default to patch for any other commits
+              BUMP="patch"
+            fi
+
+            echo "Auto-detected bump type: $BUMP"
+          fi
+          echo "BUMP=$BUMP" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          LATEST="${{ steps.latest_tag.outputs.LATEST }}"
+          BUMP="${{ steps.bump.outputs.BUMP }}"
+          VERSION=${LATEST#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+
+          if [ "$BUMP" = "major" ]; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+          elif [ "$BUMP" = "minor" ]; then
+            MINOR=$((MINOR + 1)); PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version will be: $NEW_VERSION"
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.NEW_VERSION }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
+          git push origin "$NEW_VERSION"
+          echo "Tagged: $NEW_VERSION — release workflow will now trigger"
