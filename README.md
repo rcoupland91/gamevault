@@ -1,5 +1,7 @@
 # GameVault 🎮
 
+> **Note:** This project was built with the assistance of AI (Claude by Anthropic). I'm a Cloud Engineer rather than a web developer — AI helped bridge that gap to bring this project to life.
+
 A self-hosted game tracking app with user accounts, cross-device sync, 2FA, and automatic game data lookup via RAWG.io.
 
 ---
@@ -53,6 +55,11 @@ Open `.env` and fill in your values. At minimum you need:
 DB_PASSWORD=choose_a_strong_password
 JWT_SECRET=<long random string>
 REFRESH_TOKEN_SECRET=<another long random string>
+
+# Creates the first admin account on startup (only runs once, safe to remove after)
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=choose_a_strong_password
 ```
 
 Generate secure secrets with:
@@ -62,6 +69,8 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
 Run it twice — use each output for `JWT_SECRET` and `REFRESH_TOKEN_SECRET`.
+
+> **First run:** If `ADMIN_*` vars are set and no admin exists, the admin account is created automatically on startup. You can remove these vars from `.env` after the first run, or leave them — they are ignored once an admin already exists.
 
 ### 3. Start
 
@@ -207,6 +216,9 @@ docker compose exec postgres psql -U gamevault -d gamevault
 | `JWT_EXPIRES_IN` | | `15m` | Access token lifetime |
 | `PORT` | | `3000` | Port the app listens on |
 | `CLIENT_URL` | | `http://localhost:3000` | Your app's public URL (used in emails) |
+| `ADMIN_USERNAME` | | — | Username for the initial admin account (first run only) |
+| `ADMIN_EMAIL` | | — | Email for the initial admin account (first run only) |
+| `ADMIN_PASSWORD` | | — | Password for the initial admin account (first run only) |
 | `RAWG_API_KEY` | | — | Free key from [rawg.io/apidocs](https://rawg.io/apidocs) |
 | `SMTP_HOST` | | — | SMTP server for email OTP |
 | `SMTP_PORT` | | `587` | SMTP port |
@@ -217,6 +229,8 @@ docker compose exec postgres psql -U gamevault -d gamevault
 
 > **Email OTP** is optional — if SMTP is not configured, users can still use TOTP (authenticator app) for 2FA, or skip 2FA entirely.
 
+> **Admin account** — The `ADMIN_*` vars are only used on the very first startup when no admin exists. They are ignored on all subsequent starts. You can remove them from `.env` after setup.
+
 ---
 
 ## Manual Setup (without Docker)
@@ -224,7 +238,7 @@ docker compose exec postgres psql -U gamevault -d gamevault
 If you prefer to run without Docker:
 
 ### Prerequisites
-- Node.js v18+
+- Node.js v20+
 - PostgreSQL v14+
 
 ### Steps
@@ -253,41 +267,55 @@ npm run dev        # development (auto-restart)
 ## API Reference
 
 ### Auth
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Create account |
-| POST | `/api/auth/login` | Sign in |
-| POST | `/api/auth/2fa/verify` | Verify 2FA code |
-| POST | `/api/auth/2fa/resend` | Resend email OTP |
-| GET  | `/api/auth/me` | Get current user |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Sign out |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | — | Create account |
+| POST | `/api/auth/login` | — | Sign in |
+| POST | `/api/auth/2fa/verify` | — | Verify 2FA code |
+| POST | `/api/auth/2fa/resend` | — | Resend email OTP |
+| GET  | `/api/auth/me` | ✅ | Get current user (includes `is_admin`) |
+| PATCH | `/api/auth/profile` | ✅ | Update username, avatar, password |
+| POST | `/api/auth/refresh` | — | Refresh access token |
+| POST | `/api/auth/logout` | ✅ | Sign out |
 
 ### 2FA
-| Method | Path | Description |
-|--------|------|-------------|
-| GET  | `/api/auth/2fa/status` | Get 2FA settings |
-| POST | `/api/auth/2fa/totp/setup` | Get TOTP QR code |
-| POST | `/api/auth/2fa/totp/confirm` | Enable TOTP + get backup codes |
-| POST | `/api/auth/2fa/totp/disable` | Disable TOTP |
-| POST | `/api/auth/2fa/email/toggle` | Toggle email OTP |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET  | `/api/auth/2fa/status` | ✅ | Get 2FA settings |
+| POST | `/api/auth/2fa/totp/setup` | ✅ | Get TOTP QR code |
+| POST | `/api/auth/2fa/totp/confirm` | ✅ | Enable TOTP + get backup codes |
+| POST | `/api/auth/2fa/totp/disable` | ✅ | Disable TOTP |
+| POST | `/api/auth/2fa/email/toggle` | ✅ | Toggle email OTP |
 
 ### Games
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/api/games` | List games (supports `?status=`, `?search=`, `?sort=`) |
-| POST   | `/api/games` | Add a game |
-| GET    | `/api/games/:id` | Get single game |
-| PATCH  | `/api/games/:id` | Update game |
-| DELETE | `/api/games/:id` | Delete game |
-| GET    | `/api/games/stats/summary` | Dashboard stats |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/api/games` | ✅ | List games (supports `?status=`, `?search=`, `?sort=`) |
+| POST   | `/api/games` | ✅ | Add a game |
+| GET    | `/api/games/:id` | ✅ | Get single game |
+| PATCH  | `/api/games/:id` | ✅ | Update game |
+| DELETE | `/api/games/:id` | ✅ | Delete game |
+| GET    | `/api/games/stats/summary` | ✅ | Dashboard stats |
 
 ### RAWG Game Search
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/rawg/search?q=elden+ring` | Search games |
-| GET | `/api/rawg/game/:idOrSlug` | Full game details |
-| GET | `/api/rawg/game/:idOrSlug/screenshots` | Screenshots |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/rawg/search?q=elden+ring` | ✅ | Search games |
+| GET | `/api/rawg/game/:idOrSlug` | ✅ | Full game details |
+| GET | `/api/rawg/game/:idOrSlug/screenshots` | ✅ | Screenshots |
+
+### Settings
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET  | `/api/settings/public` | — | Public settings (signups enabled?) |
+| GET  | `/api/settings` | ✅ | All settings |
+| PATCH | `/api/settings` | ✅ Admin | Update a setting |
+
+### Admin
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET   | `/api/admin/users` | ✅ Admin | List all users |
+| PATCH | `/api/admin/users/:id/role` | ✅ Admin | Promote or demote admin (`{ "is_admin": true/false }`) |
 
 ---
 
@@ -308,9 +336,14 @@ Once the app is accessible over HTTPS (via Cloudflare Tunnel or a domain):
 - JWT access tokens expire in 15 minutes; refresh tokens last 30 days and rotate on each use
 - Passwords hashed with bcrypt (cost factor 12)
 - Rate limiting on all auth endpoints
+- OTP codes and TOTP backup codes generated with `crypto.randomBytes` / `crypto.randomInt` (cryptographically secure)
+- OTP verification uses constant-time comparison (`crypto.timingSafeEqual`) to prevent timing attacks
 - TOTP backup codes are bcrypt-hashed and shown to the user only once
 - Each user can only access their own games — enforced at the database query level
 - Postgres is on an internal Docker network, not reachable from outside the host
+- Content Security Policy (CSP) enforced via Helmet — restricts script, style, font, and frame sources
+- Admin-only routes protected by a separate `requireAdmin` middleware — role stored in the database
+- Admin account seeded from environment variables on first startup; ignored on subsequent starts
 
 ---
 
@@ -319,13 +352,15 @@ Once the app is accessible over HTTPS (via Cloudflare Tunnel or a domain):
 ```
 gamevault/
 ├── server/
-│   ├── index.js              ← Express entry point
-│   ├── db/setup.js           ← PostgreSQL schema + connection pool
-│   ├── middleware/auth.js    ← JWT verification + token issuance
+│   ├── index.js              ← Express entry point, CSP/security headers
+│   ├── db/setup.js           ← PostgreSQL schema, connection pool, admin seed
+│   ├── middleware/auth.js    ← JWT verification, requireAuth, requireAdmin
 │   ├── routes/
-│   │   ├── auth.js           ← Register, login, 2FA
+│   │   ├── auth.js           ← Register, login, 2FA, profile
 │   │   ├── games.js          ← Game CRUD + stats
-│   │   └── rawg.js           ← RAWG.io game search proxy
+│   │   ├── rawg.js           ← RAWG.io game search proxy
+│   │   ├── settings.js       ← App settings (admin-protected writes)
+│   │   └── admin.js          ← User management (admin only)
 │   └── utils/email.js        ← OTP email sender
 ├── client/
 │   ├── index.html            ← Full frontend SPA
@@ -335,6 +370,5 @@ gamevault/
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
-├── .dockerignore
-└── SETUP.md
+└── .dockerignore
 ```

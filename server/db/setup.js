@@ -18,9 +18,13 @@ CREATE TABLE IF NOT EXISTS users (
   email         VARCHAR(255) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   avatar_url    TEXT,
+  is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add is_admin to existing deployments
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 2FA settings per user
 CREATE TABLE IF NOT EXISTS user_2fa (
@@ -91,6 +95,7 @@ INSERT INTO app_settings (key, value) VALUES ('signups_enabled', 'true') ON CONF
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_status  ON games(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_rawg ON games(user_id, rawg_id) WHERE rawg_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_otp_user ON otp_codes(user_id);
 
@@ -113,9 +118,42 @@ async function setupDatabase() {
     console.log('🗄️  Setting up database schema…');
     await client.query(SCHEMA);
     console.log('✅  Database schema ready');
+    await seedAdmin();
   } catch (err) {
     console.error('❌  Database setup failed:', err.message);
     process.exit(1);
+  } finally {
+    client.release();
+  }
+}
+
+async function seedAdmin() {
+  const { rows } = await pool.query('SELECT id FROM users WHERE is_admin = TRUE LIMIT 1');
+  if (rows.length) return; // Admin already exists
+
+  const username = process.env.ADMIN_USERNAME;
+  const email    = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!username || !email || !password) {
+    console.warn('⚠️   No admin account found. Set ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD in .env to create one on startup.');
+    return;
+  }
+
+  const bcrypt = require('bcryptjs');
+  const hash = await bcrypt.hash(password, 12);
+
+  const client = await pool.connect();
+  try {
+    const { rows: inserted } = await client.query(
+      `INSERT INTO users (username, email, password_hash, is_admin)
+       VALUES ($1, $2, $3, TRUE)
+       ON CONFLICT (email) DO UPDATE SET is_admin = TRUE
+       RETURNING username, email`,
+      [username.toLowerCase(), email.toLowerCase(), hash]
+    );
+    await client.query('INSERT INTO user_2fa (user_id) SELECT id FROM users WHERE email = $1 ON CONFLICT DO NOTHING', [email.toLowerCase()]);
+    console.log(`✅  Admin account ready: ${inserted[0].username} (${inserted[0].email})`);
   } finally {
     client.release();
   }
@@ -125,4 +163,4 @@ if (require.main === module) {
   setupDatabase().then(() => pool.end());
 }
 
-module.exports = { pool, setupDatabase };
+module.exports = { pool, setupDatabase, seedAdmin };
