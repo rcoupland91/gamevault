@@ -43,8 +43,10 @@ function normaliseGame(g) {
 // ── GET /rawg/search?q=elden+ring ──
 router.get('/search', requireAuth, searchLimiter, async (req, res) => {
   try {
-    const { q, page = 1, page_size = 10 } = req.query;
+    const { q } = req.query;
     if (!q || q.length < 2) return res.status(400).json({ error: 'Query must be at least 2 characters' });
+    const page      = Math.max(1, parseInt(req.query.page) || 1);
+    const page_size = Math.min(20, Math.max(1, parseInt(req.query.page_size) || 10));
 
     const url = `${RAWG}/games?key=${rawgKey()}&search=${encodeURIComponent(q)}&page=${page}&page_size=${page_size}&search_precise=true`;
     const resp = await fetch(url);
@@ -76,6 +78,8 @@ router.get('/search', requireAuth, searchLimiter, async (req, res) => {
 router.get('/game/:idOrSlug', requireAuth, searchLimiter, async (req, res) => {
   try {
     const { idOrSlug } = req.params;
+    if (!/^[a-zA-Z0-9_-]+$/.test(idOrSlug))
+      return res.status(400).json({ error: 'Invalid game identifier' });
     const url = `${RAWG}/games/${idOrSlug}?key=${rawgKey()}`;
     const resp = await fetch(url);
     if (resp.status === 404) return res.status(404).json({ error: 'Game not found on RAWG' });
@@ -91,6 +95,8 @@ router.get('/game/:idOrSlug', requireAuth, searchLimiter, async (req, res) => {
 // ── GET /rawg/game/:idOrSlug/screenshots ──
 router.get('/game/:idOrSlug/screenshots', requireAuth, searchLimiter, async (req, res) => {
   try {
+    if (!/^[a-zA-Z0-9_-]+$/.test(req.params.idOrSlug))
+      return res.status(400).json({ error: 'Invalid game identifier' });
     const url = `${RAWG}/games/${req.params.idOrSlug}/screenshots?key=${rawgKey()}&page_size=10`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`RAWG responded with ${resp.status}`);

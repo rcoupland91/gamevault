@@ -48,6 +48,10 @@ router.post('/', async (req, res) => {
     if (!title) return res.status(400).json({ error: 'title is required' });
     if (!['playing','played','toplay'].includes(status))
       return res.status(400).json({ error: 'Invalid status' });
+    if (rating !== undefined && (rating < 0 || rating > 5))
+      return res.status(400).json({ error: 'Rating must be between 0 and 5' });
+    if (hours !== undefined && hours < 0)
+      return res.status(400).json({ error: 'Hours cannot be negative' });
 
     const { rows } = await pool.query(
       `INSERT INTO games (user_id, rawg_id, title, status, rating, hours, review,
@@ -61,6 +65,7 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'This game is already in your library' });
     console.error('Add game error:', err);
     res.status(500).json({ error: 'Failed to add game' });
   }
@@ -73,6 +78,13 @@ router.patch('/:id', async (req, res) => {
       'SELECT * FROM games WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]
     );
     if (!existing.rows.length) return res.status(404).json({ error: 'Game not found' });
+
+    if (req.body.status && !['playing','played','toplay'].includes(req.body.status))
+      return res.status(400).json({ error: 'Invalid status' });
+    if (req.body.rating !== undefined && (req.body.rating < 0 || req.body.rating > 5))
+      return res.status(400).json({ error: 'Rating must be between 0 and 5' });
+    if (req.body.hours !== undefined && req.body.hours < 0)
+      return res.status(400).json({ error: 'Hours cannot be negative' });
 
     const fields = ['status','rating','hours','review','platform','genre','year',
                     'art_url','background_url','developer','publisher','metacritic','notes','title'];

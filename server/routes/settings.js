@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { pool } = require('../db/setup');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 // ── GET /settings/public — public settings (no auth needed) ──
 router.get('/public', async (req, res) => {
@@ -26,8 +26,8 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// ── PATCH /settings — update a setting (auth required) ──
-router.patch('/', requireAuth, async (req, res) => {
+// ── PATCH /settings — update a setting (admin only) ──
+router.patch('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { key, value } = req.body;
     const allowed = ['signups_enabled'];

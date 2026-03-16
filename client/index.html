@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
   <style>
-    :root{--bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--card:#1a1a24;--card2:#22222f;--border:rgba(255,255,255,0.07);--text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;--accent:#7c6af7;--accent2:#a394ff;--green:#4ade8a;--amber:#f5a623;--red:#f55353;--blue:#4ac8fa;--pink:#f56bac;--glow:rgba(124,106,247,0.18);--radius:16px;--radius-sm:10px;--font-head:'Plus Jakarta Sans',sans-serif;--font-body:'DM Sans',sans-serif;--safe-bot:env(safe-area-inset-bottom)}
+    :root{--bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--card:#1a1a24;--card2:#22222f;--border:rgba(255,255,255,0.07);--text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;--accent:#7c6af7;--accent2:#a394ff;--green:#4ade8a;--amber:#f5a623;--red:#f55353;--blue:#4ac8fa;--pink:#f56bac;--glow:rgba(124,106,247,0.18);--radius:16px;--radius-sm:10px;--font-head:'Plus Jakarta Sans',sans-serif;--font-body:'DM Sans',sans-serif;--safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom)}
     .light{--bg:#f4f4f8;--bg2:#ebebf2;--bg3:#e2e2ec;--card:#ffffff;--card2:#f0f0f8;--border:rgba(0,0,0,0.08);--text:#141420;--text2:#555568;--text3:#9999b0;--glow:rgba(124,106,247,0.10)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{height:100%}
@@ -155,6 +155,24 @@
     .star-filled{color:var(--amber)}
     .star-empty{color:var(--text3)}
 
+    /* View toggle */
+    .view-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card);color:var(--text3);cursor:pointer;display:grid;place-items:center;font-size:1rem;transition:all .15s;flex-shrink:0}
+    .view-btn:hover{color:var(--text);border-color:var(--accent)}
+    .view-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .view-toggles{display:flex;gap:4px;margin-left:auto}
+
+    /* List view */
+    .games-grid.list-view{display:flex;flex-direction:column;gap:6px}
+    .games-grid.list-view .game-card{display:flex;align-items:center;gap:0}
+    .games-grid.list-view .game-card:hover{transform:none;background:var(--card2)}
+    .games-grid.list-view .game-card-art{width:52px;height:52px;aspect-ratio:1;flex-shrink:0;font-size:1.2rem;border-radius:0;border-right:1px solid var(--border)}
+    .games-grid.list-view .game-card-art img{border-radius:0}
+    .games-grid.list-view .game-card-status{top:50%;transform:translateY(-50%);right:8px;font-size:.62rem}
+    .games-grid.list-view .game-card-body{flex:1;display:flex;align-items:center;gap:12px;padding:0 44px 0 14px;min-width:0}
+    .games-grid.list-view .game-card-title{margin:0;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+    .games-grid.list-view .game-card-footer{margin:0;flex-shrink:0}
+    .games-grid.list-view .platform-chip{display:none}
+
     /* Modal */
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -250,7 +268,7 @@
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    @media(max-width:900px){.sidebar{display:none}.mob-nav.visible{display:flex}.content{padding:20px 16px calc(80px + var(--safe-bot))}.topbar{padding:16px 20px}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.dash-row.thirds{grid-template-columns:1fr}.games-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
+    @media(max-width:900px){.sidebar{display:none}.mob-nav.visible{display:flex}.content{padding:20px 16px calc(80px + var(--safe-bot))}.topbar{padding:calc(16px + var(--safe-top)) 20px 14px}.stats-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.dash-row.thirds{grid-template-columns:1fr}.games-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}#topbar-avatar{display:grid!important}}
     @media(max-width:500px){.stats-grid{gap:10px}.stat-value{font-size:1.6rem}.games-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}.form-row{flex-direction:column}}
     .modal::-webkit-scrollbar{width:4px}.modal::-webkit-scrollbar-track{background:transparent}.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
   </style>
@@ -364,6 +382,7 @@
       <h1 id="page-title">Dashboard</h1>
       <div class="topbar-actions">
         <button class="btn btn-primary" id="addGameBtn">＋ Add Game</button>
+        <div id="topbar-avatar" onclick="navigateTo('profile')" title="Profile" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c47fff);display:none;place-items:center;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;overflow:hidden">?</div>
       </div>
     </div>
     <div class="content">
@@ -384,10 +403,14 @@
       <!-- Playing -->
       <div class="page" id="page-playing">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-playing" id="search-playing"/>
+          <input class="search-input" placeholder="Search…" id="search-playing"/>
           <button class="filter-chip active" data-list="playing" data-sort="recent">Recent</button>
           <button class="filter-chip" data-list="playing" data-sort="alpha">A–Z</button>
           <button class="filter-chip" data-list="playing" data-sort="rating">Rating</button>
+          <div class="view-toggles">
+            <button class="view-btn active" data-view="grid" title="Grid view">⊞</button>
+            <button class="view-btn" data-view="list" title="List view">≡</button>
+          </div>
         </div>
         <div class="games-grid" id="grid-playing"></div>
       </div>
@@ -395,11 +418,15 @@
       <!-- Played -->
       <div class="page" id="page-played">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-played" id="search-played"/>
+          <input class="search-input" placeholder="Search…" id="search-played"/>
           <button class="filter-chip active" data-list="played" data-sort="recent">Recent</button>
           <button class="filter-chip" data-list="played" data-sort="alpha">A–Z</button>
           <button class="filter-chip" data-list="played" data-sort="rating">Rating</button>
           <button class="filter-chip" data-list="played" data-sort="hours">Hours</button>
+          <div class="view-toggles">
+            <button class="view-btn active" data-view="grid" title="Grid view">⊞</button>
+            <button class="view-btn" data-view="list" title="List view">≡</button>
+          </div>
         </div>
         <div class="games-grid" id="grid-played"></div>
       </div>
@@ -407,9 +434,13 @@
       <!-- Backlog -->
       <div class="page" id="page-toplay">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-toplay" id="search-toplay"/>
+          <input class="search-input" placeholder="Search…" id="search-toplay"/>
           <button class="filter-chip active" data-list="toplay" data-sort="recent">Recent</button>
           <button class="filter-chip" data-list="toplay" data-sort="alpha">A–Z</button>
+          <div class="view-toggles">
+            <button class="view-btn active" data-view="grid" title="Grid view">⊞</button>
+            <button class="view-btn" data-view="list" title="List view">≡</button>
+          </div>
         </div>
         <div class="games-grid" id="grid-toplay"></div>
       </div>
@@ -417,11 +448,15 @@
       <!-- All -->
       <div class="page" id="page-all">
         <div class="filter-bar">
-          <input class="search-input" placeholder="Search…" id="search-all" id="search-all"/>
+          <input class="search-input" placeholder="Search…" id="search-all"/>
           <button class="filter-chip active" data-list="all" data-sort="recent">Recent</button>
           <button class="filter-chip" data-list="all" data-sort="alpha">A–Z</button>
           <button class="filter-chip" data-list="all" data-sort="rating">Rating</button>
           <button class="filter-chip" data-list="all" data-sort="hours">Hours</button>
+          <div class="view-toggles">
+            <button class="view-btn active" data-view="grid" title="Grid view">⊞</button>
+            <button class="view-btn" data-view="list" title="List view">≡</button>
+          </div>
         </div>
         <div class="games-grid" id="grid-all"></div>
       </div>
@@ -501,7 +536,7 @@
             <button class="btn btn-sm btn-danger" id="logout-btn">Sign Out</button>
           </div>
         </div>
-        <div class="settings-section">
+        <div class="settings-section" id="admin-settings-section" style="display:none">
           <h3>Registration</h3>
           <div class="settings-row">
             <div>
@@ -573,6 +608,7 @@
   <button class="mob-nav-item" data-page="playing"><span class="mn-icon">▶</span>Playing</button>
   <button class="mob-nav-item" data-page="played"><span class="mn-icon">✓</span>Done</button>
   <button class="mob-nav-item" data-page="toplay"><span class="mn-icon">🔖</span>Backlog</button>
+  <button class="mob-nav-item" data-page="profile"><span class="mn-icon">👤</span>Account</button>
   <button class="mob-nav-item" data-page="settings"><span class="mn-icon">⚙</span>Settings</button>
 </nav>
 
@@ -705,6 +741,7 @@ let editingId  = null;
 let selStatus  = 'toplay';
 let selRating  = 0;
 let isDark     = localStorage.getItem('gv-theme') !== 'light';
+let viewMode   = localStorage.getItem('gv-view') || 'grid';
 let accessToken  = localStorage.getItem('gv-access');
 let refreshToken = localStorage.getItem('gv-refresh');
 let preToken     = null;
@@ -720,6 +757,8 @@ loadSignupState();
 const _tb = document.getElementById('themeBtn'); if (_tb) _tb.addEventListener('click', function() { setTheme(!isDark); });
 document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => navigateTo(b.dataset.page)));
 document.getElementById('addGameBtn').onclick = () => openModal(null);
+document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => setViewMode(b.dataset.view)));
+applyViewMode();
 
 if (accessToken) {
   initApp();
@@ -936,8 +975,12 @@ async function initApp() {
     const me = await api('/api/auth/me');
     document.getElementById('user-name-display').textContent = me.username;
     document.getElementById('user-avatar').textContent = me.username[0].toUpperCase();
+    const ta = document.getElementById('topbar-avatar');
+    if (me.avatar_url) { ta.innerHTML = `<img src="${esc(me.avatar_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='${me.username[0].toUpperCase()}'"/>`; }
+    else { ta.textContent = me.username[0].toUpperCase(); }
     document.getElementById('s-username').textContent = me.username;
     document.getElementById('s-email').textContent = me.email;
+    if (me.is_admin) document.getElementById('admin-settings-section').style.display = '';
     await loadTFAStatus();
   } catch {}
   await loadGames();
@@ -999,6 +1042,23 @@ function getSorted(arr, s) {
   });
 }
 
+function setViewMode(mode) {
+  viewMode = mode;
+  localStorage.setItem('gv-view', mode);
+  applyViewMode();
+  // Re-render the active list
+  const active = document.querySelector('.page.active');
+  if (active) {
+    const page = active.id.replace('page-','');
+    if (['playing','played','toplay','all'].includes(page)) renderList(page);
+  }
+}
+
+function applyViewMode() {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === viewMode));
+  document.querySelectorAll('.games-grid').forEach(g => g.classList.toggle('list-view', viewMode === 'list'));
+}
+
 function renderList(listId) {
   const filter = listId==='all'?null:listId;
   const search = (document.getElementById('search-'+listId)?.value||'').toLowerCase();
@@ -1007,11 +1067,12 @@ function renderList(listId) {
   arr = getSorted(arr, listId);
   const grid = document.getElementById('grid-'+listId);
   if (!grid) return;
+  grid.classList.toggle('list-view', viewMode === 'list');
   if (!arr.length) {
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🎮</div><h3>No games here yet</h3><p>Hit "+ Add Game" to get started</p></div>`;
     return;
   }
-  grid.innerHTML = arr.map(gameCardHTML).join('');
+  grid.innerHTML = arr.map(viewMode === 'list' ? gameListRowHTML : gameCardHTML).join('');
 }
 
 function gameCardHTML(g) {
@@ -1027,6 +1088,24 @@ function gameCardHTML(g) {
       <div class="game-card-footer">
         <div class="stars">${stars}</div>
         ${g.hours?`<span style="font-size:.72rem;color:var(--text3)">${g.hours}h</span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function gameListRowHTML(g) {
+  const art = g.art_url ? `<img src="${esc(g.art_url)}" alt="${esc(g.title)}" loading="lazy" onerror="this.style.display='none'"/>` : (platIcons[g.platform]||'🎮');
+  const sc = {playing:'status-playing',played:'status-played',toplay:'status-toplay'}[g.status]||'';
+  const sl = {playing:'Playing',played:'Completed',toplay:'Backlog'}[g.status]||'';
+  const stars = [1,2,3,4,5].map(i=>`<span class="star ${i<=(g.rating||0)?'star-filled':'star-empty'}">★</span>`).join('');
+  return `<div class="game-card" onclick="openModal('${g.id}')">
+    <div class="game-card-art">${art}<span class="game-card-status ${sc}">${sl}</span></div>
+    <div class="game-card-body">
+      <div class="game-card-title">${esc(g.title)}</div>
+      ${g.platform?`<span style="font-size:.72rem;color:var(--text3)">${platIcons[g.platform]||'🕹️'} ${esc(g.platform)}</span>`:''}
+      <div class="game-card-footer">
+        <div class="stars">${stars}</div>
+        ${g.hours?`<span style="font-size:.72rem;color:var(--text3);margin-left:6px">${g.hours}h</span>`:''}
       </div>
     </div>
   </div>`;
@@ -1605,6 +1684,9 @@ async function updateSidebarUser() {
     const letter = me.username ? me.username[0].toUpperCase() : '?';
     document.getElementById('user-name-display').textContent = me.username;
     setAvatarPreview(document.getElementById('user-avatar'), me.avatar_url, letter);
+    const ta = document.getElementById('topbar-avatar');
+    if (me.avatar_url) { ta.innerHTML = `<img src="${esc(me.avatar_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='${letter}'"/>`; }
+    else { ta.textContent = letter; }
     document.getElementById('s-username').textContent = me.username;
     document.getElementById('s-email').textContent = me.email;
   } catch(e) {}
