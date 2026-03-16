@@ -1,0 +1,70 @@
+# ── GameVault — pre-built image deployment ──
+# Use this file if you want to run GameVault without cloning the repo.
+# The app image is pulled from GitHub Container Registry (GHCR).
+#
+# Quick start:
+#   1. curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/.env.example
+#   2. cp .env.example .env  (then fill in your values)
+#   3. docker compose -f docker-compose.image.yml up -d
+
+services:
+
+  # ── PostgreSQL ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: gamevault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-gamevault}
+      POSTGRES_USER: ${DB_USER:-gamevault}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gamevault} -d ${DB_NAME:-gamevault}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  # ── GameVault App ──
+  app:
+    image: ${GAMEVAULT_IMAGE:-ghcr.io/OWNER/gamevault:latest}
+    container_name: gamevault-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-gamevault}
+      DB_USER: ${DB_USER:-gamevault}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?REFRESH_TOKEN_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-GameVault <noreply@gamevault.app>}
+      RAWG_API_KEY: ${RAWG_API_KEY:-}
+      TOTP_APP_NAME: ${TOTP_APP_NAME:-GameVault}
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
