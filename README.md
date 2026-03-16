@@ -32,24 +32,20 @@ Because of this, **nginx is not included** — Cloudflare Tunnels and VPNs handl
 
 ---
 
-## Quick Start (Docker)
+## Quick Start (pre-built image — recommended)
 
-This is the recommended way to run GameVault. You only need Docker installed — no Node.js or PostgreSQL required on the host.
+No git clone needed. Docker pulls the pre-built image directly from GitHub Container Registry.
 
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/yourusername/gamevault.git
-cd gamevault
-```
-
-### 2. Configure environment
+### 1. Download the environment template
 
 ```bash
+curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/.env.example
 cp .env.example .env
 ```
 
-Open `.env` and fill in your values. At minimum you need:
+### 2. Configure `.env`
+
+Open `.env` and fill in your values. At minimum:
 
 ```env
 DB_PASSWORD=choose_a_strong_password
@@ -68,9 +64,50 @@ Generate secure secrets with:
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-Run it twice — use each output for `JWT_SECRET` and `REFRESH_TOKEN_SECRET`.
+Run it twice — one for `JWT_SECRET`, one for `REFRESH_TOKEN_SECRET`.
 
-> **First run:** If `ADMIN_*` vars are set and no admin exists, the admin account is created automatically on startup. You can remove these vars from `.env` after the first run, or leave them — they are ignored once an admin already exists.
+> **First run:** If `ADMIN_*` vars are set and no admin exists, the admin account is created automatically on startup. They are ignored on all subsequent starts.
+
+### 3. Download the compose file and start
+
+```bash
+curl -O https://raw.githubusercontent.com/OWNER/gamevault/main/docker-compose.image.yml
+docker compose -f docker-compose.image.yml up -d
+```
+
+Docker pulls Postgres and the GameVault image, runs the schema setup, and starts everything. The app is at **http://your-server-ip:3000**.
+
+> **Tip:** Each [GitHub Release](https://github.com/OWNER/gamevault/releases) includes a ready-to-paste `docker-compose.yml` pinned to that exact version — no manual image tag editing needed.
+
+---
+
+## Updating
+
+```bash
+# Pull the latest image and restart
+docker compose -f docker-compose.image.yml pull
+docker compose -f docker-compose.image.yml up -d
+```
+
+---
+
+## Quick Start (build from source)
+
+If you want to modify the code or run from source:
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/OWNER/gamevault.git
+cd gamevault
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env with your values (same as above)
+```
 
 ### 3. Start
 
@@ -78,7 +115,7 @@ Run it twice — use each output for `JWT_SECRET` and `REFRESH_TOKEN_SECRET`.
 docker compose up -d
 ```
 
-Docker will pull Postgres, build the app, run the database schema setup, and start everything. The app is now at **http://your-server-ip:3000**.
+Docker builds the image locally, runs the schema setup, and starts everything.
 
 ---
 
@@ -367,7 +404,8 @@ gamevault/
 │   ├── manifest.json         ← PWA manifest
 │   └── sw.js                 ← Service worker (offline support)
 ├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml          ← build from source
+├── docker-compose.image.yml    ← run pre-built image (no clone needed)
 ├── .env.example
 ├── .gitignore
 └── .dockerignore
