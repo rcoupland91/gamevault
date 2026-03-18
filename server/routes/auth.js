@@ -69,6 +69,7 @@ router.post('/login', authLimiter, async (req, res) => {
     if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = rows[0];
+    if (user.is_active === false) return res.status(403).json({ error: 'Your account has been disabled. Please contact an administrator.' });
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 

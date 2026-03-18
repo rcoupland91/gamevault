@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Add is_admin to existing deployments
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- 2FA settings per user
 CREATE TABLE IF NOT EXISTS user_2fa (

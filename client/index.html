@@ -482,6 +482,7 @@
                 <input class="form-input" id="profile-avatar-url" placeholder="Paste URL…" style="flex:1;font-size:.8rem;padding:7px 10px"/>
               </div>
               <button class="btn btn-primary btn-sm" id="save-avatar-btn">Save Avatar</button>
+              <div id="avatar-error" style="display:none;color:var(--red);font-size:.8rem;text-align:center;font-weight:500"></div>
             </div>
           </div>
 
@@ -537,7 +538,10 @@
           </div>
         </div>
         <div class="settings-section" id="admin-settings-section" style="display:none">
-          <h3>Registration</h3>
+          <h3>Users</h3>
+          <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+
+          <h3 style="margin-top:20px">Registration</h3>
           <div class="settings-row">
             <div>
               <div class="settings-label">Allow New Signups</div>
@@ -984,7 +988,7 @@ async function initApp() {
     else { ta.textContent = me.username[0].toUpperCase(); }
     document.getElementById('s-username').textContent = me.username;
     document.getElementById('s-email').textContent = me.email;
-    if (me.is_admin) document.getElementById('admin-settings-section').style.display = '';
+    if (me.is_admin) { document.getElementById('admin-settings-section').style.display = ''; loadAdminUsers(); }
     await loadTFAStatus();
   } catch {}
   await loadGames();
@@ -1619,8 +1623,12 @@ function setAvatarPreview(el, url, fallbackLetter) {
 
 function handleAvatarFileUpload(file) {
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) {
-    toast('Image must be under 2MB', 'error');
+  if (file.size > 3.5 * 1024 * 1024) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    const msg = `Image too large (${sizeMB}MB) — maximum is 3.5MB`;
+    toast(msg, 'error');
+    const errEl = document.getElementById('avatar-error');
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; setTimeout(() => errEl.style.display = 'none', 6000); }
     return;
   }
   const reader = new FileReader();
@@ -1720,6 +1728,58 @@ function showProfileError(msg) {
 
 let currentUser = null;
 
+
+// ── Admin user management ──
+async function loadAdminUsers() {
+  const list = document.getElementById('admin-users-list');
+  if (!list) return;
+  try {
+    const users = await api('/api/admin/users');
+    list.innerHTML = users.map(u => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card2);border-radius:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.9rem">${esc(u.username)} ${u.is_admin ? '<span style="font-size:.7rem;background:var(--accent);color:#fff;padding:2px 6px;border-radius:99px">Admin</span>' : ''}</div>
+          <div style="font-size:.75rem;color:var(--text2)">${esc(u.email)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-sm btn-ghost" onclick="adminToggleActive('${u.id}', ${u.is_active})" title="${u.is_active ? 'Disable account' : 'Enable account'}"
+            style="color:${u.is_active ? 'var(--green)' : 'var(--red)'}">
+            ${u.is_active ? '✓ Active' : '✗ Disabled'}
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="adminToggleAdmin('${u.id}', ${u.is_admin})"
+            title="${u.is_admin ? 'Remove admin' : 'Make admin'}">
+            ${u.is_admin ? '★ Admin' : '☆ User'}
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="adminDeleteUser('${u.id}', '${esc(u.username)}')" title="Delete user">✕</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = `<div style="color:var(--red);font-size:.85rem">${e.message}</div>`; }
+}
+
+async function adminToggleActive(id, current) {
+  try {
+    await api(`/api/admin/users/${id}/status`, 'PATCH', { is_active: !current });
+    toast(!current ? 'Account enabled' : 'Account disabled', 'success');
+    loadAdminUsers();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function adminToggleAdmin(id, current) {
+  try {
+    await api(`/api/admin/users/${id}/role`, 'PATCH', { is_admin: !current });
+    toast(!current ? 'User promoted to admin' : 'Admin role removed', 'success');
+    loadAdminUsers();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function adminDeleteUser(id, username) {
+  if (!confirm(`Delete ${username}? This will permanently remove their account and all their games.`)) return;
+  try {
+    await api(`/api/admin/users/${id}`, 'DELETE');
+    toast(`${username} deleted`, 'success');
+    loadAdminUsers();
+  } catch(e) { toast(e.message, 'error'); }
+}
 
 // ── Signup settings ──
 let signupsEnabled = true;
