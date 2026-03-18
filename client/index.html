@@ -656,7 +656,7 @@
             <option>PS5</option><option>PS4</option><option>PS3</option>
             <option>Xbox Series X</option><option>Xbox One</option>
             <option>Nintendo Switch</option><option>Wii U</option><option>Wii</option>
-            <option>PC</option><option>Steam Deck</option>
+            <option>PC</option><option>Steam Deck</option><option>GeForce Now</option>
             <option>iOS</option><option>Android</option>
             <option>Game Boy</option><option>3DS</option><option>DS</option>
             <option>Retro</option><option>Other</option>
@@ -679,6 +679,10 @@
           <button class="status-btn" id="sb-playing" id="sb-playing">▶ Playing</button>
           <button class="status-btn sel-toplay" id="sb-played" id="sb-played">✓ Completed</button>
           <button class="status-btn" id="sb-toplay" id="sb-toplay">🔖 Backlog</button>
+        </div>
+        <div id="completed-date-row" style="display:none;margin-top:10px">
+          <label style="font-size:.78rem;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Date Completed</label>
+          <input class="field" id="field-completed-at" type="date" style="width:100%"/>
         </div>
       </div>
 
@@ -1217,10 +1221,16 @@ async function selectRawgGame(id, slug) {
     document.getElementById('field-developer').value = g.developer || '';
     document.getElementById('field-publisher').value = g.publisher || '';
     document.getElementById('field-metacritic').value= g.metacritic || '';
-    // Pick best matching platform
+    // Filter platform dropdown to only show platforms this game is available on
     if (g.platforms_all?.length) {
       const sel = document.getElementById('field-platform');
-      const match = Array.from(sel.options).find(o => g.platforms_all.some(p => p.toLowerCase().includes(o.value.toLowerCase())));
+      const allOptions = Array.from(sel.options);
+      allOptions.forEach(o => {
+        if (!o.value) return; // keep "Select…"
+        const matches = g.platforms_all.some(p => p.toLowerCase().includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(p.toLowerCase()));
+        o.style.display = matches ? '' : 'none';
+      });
+      const match = allOptions.find(o => o.value && o.style.display !== 'none');
       if (match) sel.value = match.value;
     }
     document.getElementById('modal-game-title').textContent = g.title;
@@ -1243,6 +1253,7 @@ function clearSearch() {
   document.getElementById('rawg-search').value = '';
   document.getElementById('rawg-results').innerHTML = '';
   rawgSelected = null;
+  Array.from(document.getElementById('field-platform').options).forEach(o => o.style.display = '');
 }
 
 // ── Modal ──
@@ -1261,7 +1272,8 @@ function openModal(id) {
   document.getElementById('field-publisher').value = g?.publisher || '';
   document.getElementById('field-hours').value     = g?.hours     || '';
   document.getElementById('field-review').value    = g?.review    || '';
-  document.getElementById('field-metacritic').value= g?.metacritic|| '';
+  document.getElementById('field-metacritic').value    = g?.metacritic|| '';
+  document.getElementById('field-completed-at').value  = g?.completed_at ? g.completed_at.split('T')[0] : '';
   document.getElementById('modal-game-title').textContent = g?.title || 'New Game';
   document.getElementById('deleteBtn').style.display = id ? 'inline-flex' : 'none';
   document.getElementById('rawg-search').value = '';
@@ -1302,6 +1314,10 @@ function selectStatus(s) {
     const btn = document.getElementById('sb-'+x);
     btn.className = 'status-btn' + (x===s ? ` sel-${x}` : '');
   });
+  document.getElementById('completed-date-row').style.display = s === 'played' ? 'block' : 'none';
+  if (s === 'played' && !document.getElementById('field-completed-at').value) {
+    document.getElementById('field-completed-at').value = new Date().toISOString().split('T')[0];
+  }
 }
 
 function updateStars(n) {
@@ -1323,6 +1339,7 @@ async function saveGame() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   const data = {
     title, status: selStatus, rating: selRating,
+    completed_at: selStatus === 'played' ? (document.getElementById('field-completed-at').value || null) : null,
     art_url:    document.getElementById('field-art').value.trim() || null,
     platform:   document.getElementById('field-platform').value || null,
     year:       document.getElementById('field-year').value || null,
