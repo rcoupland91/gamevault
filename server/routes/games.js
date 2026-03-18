@@ -43,7 +43,7 @@ router.post('/', async (req, res) => {
     const {
       rawg_id, title, status = 'toplay', rating = 0, hours = 0, review,
       platform, genre, year, art_url, background_url, developer, publisher,
-      metacritic, rawg_slug, notes
+      metacritic, rawg_slug, notes, completed_at
     } = req.body;
     if (!title) return res.status(400).json({ error: 'title is required' });
     if (!['playing','played','toplay'].includes(status))
@@ -53,15 +53,20 @@ router.post('/', async (req, res) => {
     if (hours !== undefined && hours < 0)
       return res.status(400).json({ error: 'Hours cannot be negative' });
 
+    const resolvedCompletedAt = status === 'played'
+      ? (completed_at || new Date().toISOString())
+      : null;
+
     const { rows } = await pool.query(
       `INSERT INTO games (user_id, rawg_id, title, status, rating, hours, review,
         platform, genre, year, art_url, background_url, developer, publisher,
-        metacritic, rawg_slug, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        metacritic, rawg_slug, notes, completed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        RETURNING *`,
       [req.user.id, rawg_id||null, title, status, rating||0, hours||0, review||null,
        platform||null, genre||null, year||null, art_url||null, background_url||null,
-       developer||null, publisher||null, metacritic||null, rawg_slug||null, notes||null]
+       developer||null, publisher||null, metacritic||null, rawg_slug||null, notes||null,
+       resolvedCompletedAt]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -87,7 +92,14 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Hours cannot be negative' });
 
     const fields = ['status','rating','hours','review','platform','genre','year',
-                    'art_url','background_url','developer','publisher','metacritic','notes','title'];
+                    'art_url','background_url','developer','publisher','metacritic','notes','title','completed_at'];
+
+    // Auto-set completed_at when marking as played, clear it when moving to other statuses
+    if (req.body.status === 'played' && !req.body.completed_at) {
+      req.body.completed_at = existing.rows[0].completed_at || new Date().toISOString();
+    } else if (req.body.status && req.body.status !== 'played') {
+      req.body.completed_at = null;
+    }
     const updates = [];
     const params = [];
     fields.forEach(f => {

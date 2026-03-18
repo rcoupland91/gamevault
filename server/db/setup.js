@@ -78,9 +78,13 @@ CREATE TABLE IF NOT EXISTS games (
   metacritic  SMALLINT,
   rawg_slug   VARCHAR(300),
   notes       TEXT,
+  completed_at TIMESTAMPTZ,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add completed_at to existing deployments
+ALTER TABLE games ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
 -- App settings (server-wide)
 CREATE TABLE IF NOT EXISTS app_settings (
