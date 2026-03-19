@@ -1304,6 +1304,7 @@ function openModal(id) {
   });
 
   document.getElementById('modal-overlay').style.display = 'flex';
+  lockBodyScroll();
 }
 
 function previewArt() {
@@ -1330,8 +1331,25 @@ function updateStars(n) {
   });
 }
 
+function lockBodyScroll() {
+  const scrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%';
+  document.body.dataset.scrollY = scrollY;
+}
+
+function unlockBodyScroll() {
+  const scrollY = parseInt(document.body.dataset.scrollY || '0');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollY);
+}
+
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
+  unlockBodyScroll();
   editingId = null; rawgSelected = null;
 }
 function handleOverlayClick(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }
