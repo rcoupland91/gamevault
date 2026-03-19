@@ -13,7 +13,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+      scriptSrc:     ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc:     ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
