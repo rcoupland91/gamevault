@@ -1,4 +1,4 @@
-const CACHE = 'gamevault-v3';
+const CACHE = 'gamevault-v4';
 const STATIC = ['/', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,12 +14,17 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return;
-  
+
+  // Let external image requests bypass the SW entirely — avoids opaque response
+  // issues with cross-origin CDNs (e.g. RAWG artwork) in iOS standalone mode
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
-        if (!res || !res.ok || res.type === 'opaque') return res;
+        if (!res || !res.ok) return res;
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
