@@ -1,4 +1,4 @@
-const CACHE = 'gamevault-v4';
+const CACHE = 'gamevault-v5';
 const STATIC = ['/', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -28,7 +28,7 @@ self.addEventListener('fetch', e => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
-      }).catch(() => cached);
+      }).catch(() => cached || new Response('', { status: 503, statusText: 'Offline' }));
     })
   );
 });
