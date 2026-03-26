@@ -4,6 +4,7 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const rateLimit  = require('express-rate-limit');
 const path       = require('path');
+const fs         = require('fs');
 const { setupDatabase } = require('./db/setup');
 
 const app = express();
@@ -13,6 +14,7 @@ app.set('trust proxy', 1);
 
 // ── Security ──
 app.use(helmet({
+  hsts: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -52,9 +54,25 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: new Date().toI
 
 // ── Serve frontend in production ──
 const clientPath = path.join(__dirname, '../client');
-app.use(express.static(clientPath));
+app.use(express.static(clientPath, { index: false }));
+
+function isOidcReady() {
+  return !!(process.env.OIDC_ENABLED === 'true' &&
+    process.env.OIDC_ISSUER_URL && process.env.OIDC_CLIENT_ID &&
+    process.env.OIDC_CLIENT_SECRET && process.env.OIDC_CALLBACK_URL);
+}
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(clientPath, 'index.html'));
+  const indexPath = path.join(clientPath, 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf8');
+  // Inject OIDC config as a synchronous global before any other script runs
+  const oidcConfig = JSON.stringify({
+    enabled: isOidcReady(),
+    displayName: process.env.OIDC_DISPLAY_NAME || 'SSO',
+  });
+  html = html.replace('<head>', `<head><script>window.__OIDC__=${oidcConfig};</script>`);
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
 });
 
 // ── Start ──
