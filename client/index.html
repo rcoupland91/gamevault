@@ -531,6 +531,26 @@
 
           <div class="form-success" id="profile-success" style="display:none;padding:8px 0"></div>
         </div>
+
+        <!-- SSO / Security section — shown only when an OIDC account is linked -->
+        <div class="settings-section" id="sso-security-section" style="max-width:600px;display:none">
+          <h3>Security</h3>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Disable Password Login</div>
+              <div class="settings-desc">Require SSO to sign in. You must have an SSO account linked to enable this.</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <div style="position:relative;width:44px;height:24px;flex-shrink:0">
+                <input type="checkbox" id="password-login-toggle" style="opacity:0;width:0;height:0;position:absolute"/>
+                <span id="password-login-track" style="position:absolute;inset:0;border-radius:12px;background:var(--bg3);border:1px solid var(--border);transition:background .2s;cursor:pointer" onclick="document.getElementById('password-login-toggle').click()"></span>
+                <span id="password-login-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;pointer-events:none"></span>
+              </div>
+              <span id="password-login-label" style="font-size:.85rem;color:var(--text2)">Enabled</span>
+            </label>
+          </div>
+          <div class="form-error" id="password-login-error" style="padding:4px 0"></div>
+        </div>
       </div>
 
       <!-- Settings -->
@@ -1611,6 +1631,9 @@ function wireEvents() {
   document.getElementById('profile-avatar-url')?.addEventListener('input', previewProfileAvatar);
   document.getElementById('save-username-btn')?.addEventListener('click', saveUsername);
   document.getElementById('save-password-btn')?.addEventListener('click', savePassword);
+  document.getElementById('password-login-toggle')?.addEventListener('change', function() {
+    togglePasswordLogin(this.checked);
+  });
 
   // Sidebar user card -> navigate to profile
   document.getElementById('sidebar-user-card')?.addEventListener('click', () => navigateTo('profile'));
@@ -1698,7 +1721,45 @@ async function loadProfile() {
     if (emailEl) emailEl.textContent = me.email;
     if (avatarUrl) avatarUrl.value = me.avatar_url || '';
     setAvatarPreview(preview, me.avatar_url, letter);
+
+    // Show SSO security section if OIDC account is linked
+    const ssoSection = document.getElementById('sso-security-section');
+    if (ssoSection && me.oidc_linked) {
+      ssoSection.style.display = 'block';
+      setPasswordLoginToggle(me.password_login_disabled === true);
+    }
   } catch(e) { console.error('loadProfile error', e); }
+}
+
+function setPasswordLoginToggle(disabled) {
+  const checkbox = document.getElementById('password-login-toggle');
+  const track = document.getElementById('password-login-track');
+  const thumb = document.getElementById('password-login-thumb');
+  const label = document.getElementById('password-login-label');
+  if (!checkbox) return;
+  checkbox.checked = disabled;
+  if (disabled) {
+    track.style.background = 'var(--accent)';
+    thumb.style.transform = 'translateX(20px)';
+    label.textContent = 'Disabled';
+  } else {
+    track.style.background = 'var(--bg3)';
+    thumb.style.transform = 'translateX(0)';
+    label.textContent = 'Enabled';
+  }
+}
+
+async function togglePasswordLogin(disabled) {
+  const errEl = document.getElementById('password-login-error');
+  if (errEl) errEl.textContent = '';
+  try {
+    await api('/api/auth/password-login/toggle', 'POST', { disabled });
+    setPasswordLoginToggle(disabled);
+  } catch(e) {
+    // Revert the toggle on failure
+    setPasswordLoginToggle(!disabled);
+    if (errEl) errEl.textContent = e.message;
+  }
 }
 
 async function saveAvatar() {

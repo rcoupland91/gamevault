@@ -59,6 +59,9 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       OIDC_CALLBACK_URL: ${OIDC_CALLBACK_URL:-}
       OIDC_DISPLAY_NAME: ${OIDC_DISPLAY_NAME:-SSO}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - internal
 

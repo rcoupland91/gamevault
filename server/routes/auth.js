@@ -70,6 +70,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
     const user = rows[0];
     if (user.is_active === false) return res.status(403).json({ error: 'Your account has been disabled. Please contact an administrator.' });
+    if (user.password_login_disabled) return res.status(403).json({ error: 'Password login is disabled for this account. Please sign in with SSO.' });
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -288,11 +289,35 @@ router.post('/logout', requireAuth, async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT u.id, u.username, u.email, u.avatar_url, u.is_admin, u.created_at,
-            f.totp_enabled, f.email_otp_enabled
+            u.password_login_disabled,
+            f.totp_enabled, f.email_otp_enabled,
+            (SELECT COUNT(*) > 0 FROM user_oauth o WHERE o.user_id = u.id) AS oidc_linked
      FROM users u LEFT JOIN user_2fa f ON f.user_id = u.id WHERE u.id = $1`,
     [req.user.id]
   );
   res.json(rows[0]);
+});
+
+// ── Toggle password login ──
+router.post('/password-login/toggle', requireAuth, async (req, res) => {
+  try {
+    const { disabled } = req.body;
+    if (typeof disabled !== 'boolean')
+      return res.status(400).json({ error: 'disabled must be a boolean' });
+
+    // Safety: must have OIDC linked before disabling password login
+    if (disabled) {
+      const { rows } = await pool.query('SELECT id FROM user_oauth WHERE user_id = $1 LIMIT 1', [req.user.id]);
+      if (!rows.length)
+        return res.status(400).json({ error: 'You must link an SSO account before disabling password login' });
+    }
+
+    await pool.query('UPDATE users SET password_login_disabled = $1 WHERE id = $2', [disabled, req.user.id]);
+    res.json({ password_login_disabled: disabled });
+  } catch (err) {
+    console.error('Toggle password login error:', err);
+    res.status(500).json({ error: 'Failed to update setting' });
+  }
 });
 
 // ── Helpers ──
