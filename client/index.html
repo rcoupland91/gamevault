@@ -308,9 +308,9 @@
         <span style="font-size:.78rem;color:var(--text3)">or</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
-      <a id="oidc-btn" href="/api/auth/oidc/login?source=web" style="display:none;width:100%;justify-content:center;margin-top:10px" class="btn btn-ghost">
+      <button id="oidc-btn" onclick="window.location.href=window.location.origin+'/api/auth/oidc/login?source=web'" style="display:none;width:100%;justify-content:center;margin-top:10px" class="btn btn-ghost">
         <span>🔑</span> <span id="oidc-btn-label">Continue with SSO</span>
-      </a>
+      </button>
     </div>
 
     <!-- Register form -->
@@ -765,6 +765,16 @@ let tfa2faMethod = 'totp';
 let tfa2faMethods = {};
 let rawgDebounce = null;
 let rawgSelected = null; // selected RAWG game data
+
+// ── OIDC button (config injected server-side into window.__OIDC__) ──
+if (window.__OIDC__ && window.__OIDC__.enabled) {
+  const _od = document.getElementById('oidc-divider');
+  const _ob = document.getElementById('oidc-btn');
+  const _ol = document.getElementById('oidc-btn-label');
+  if (_od) _od.style.display = 'flex';
+  if (_ob) _ob.style.display = 'flex';
+  if (_ol) _ol.textContent = 'Continue with ' + (window.__OIDC__.displayName || 'SSO');
+}
 
 // ── Boot ──
 applyTheme();
@@ -1817,15 +1827,7 @@ async function loadSignupState() {
     signupsEnabled = data.signups_enabled !== false;
     const toggle = document.getElementById('signups-toggle');
     if (toggle) toggle.checked = signupsEnabled;
-    // Show OIDC button if enabled
-    if (data.oidc_enabled) {
-      const divider = document.getElementById('oidc-divider');
-      const btn     = document.getElementById('oidc-btn');
-      const label   = document.getElementById('oidc-btn-label');
-      if (divider) divider.style.display = 'flex';
-      if (btn)     btn.style.display     = 'flex';
-      if (label)   label.textContent     = `Continue with ${data.oidc_display_name || 'SSO'}`;
-    }
+    // (OIDC button visibility handled synchronously via window.__OIDC__ injected by server)
   } catch(e) { signupsEnabled = true; }
 }
 
