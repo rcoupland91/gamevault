@@ -303,6 +303,14 @@
       </div>
       <div class="form-error" id="login-error"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" id="login-btn">Sign In</button>
+      <div id="oidc-divider" style="display:none;align-items:center;gap:10px;margin:14px 0 0">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:.78rem;color:var(--text3)">or</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <a id="oidc-btn" href="/api/auth/oidc/login?source=web" style="display:none;width:100%;justify-content:center;margin-top:10px" class="btn btn-ghost">
+        <span>🔑</span> <span id="oidc-btn-label">Continue with SSO</span>
+      </a>
     </div>
 
     <!-- Register form -->
@@ -1809,6 +1817,15 @@ async function loadSignupState() {
     signupsEnabled = data.signups_enabled !== false;
     const toggle = document.getElementById('signups-toggle');
     if (toggle) toggle.checked = signupsEnabled;
+    // Show OIDC button if enabled
+    if (data.oidc_enabled) {
+      const divider = document.getElementById('oidc-divider');
+      const btn     = document.getElementById('oidc-btn');
+      const label   = document.getElementById('oidc-btn-label');
+      if (divider) divider.style.display = 'flex';
+      if (btn)     btn.style.display     = 'flex';
+      if (label)   label.textContent     = `Continue with ${data.oidc_display_name || 'SSO'}`;
+    }
   } catch(e) { signupsEnabled = true; }
 }
 

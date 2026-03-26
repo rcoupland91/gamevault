@@ -48,6 +48,8 @@ async function storeRefreshToken(userId, token) {
 }
 
 // ── GET /auth/oidc/login — redirect to OIDC provider ──
+// ?source=web  → after auth, store tokens in localStorage and redirect to /
+// (default)    → after auth, redirect to gamevault:// deep link (iOS)
 router.get('/login', async (req, res) => {
   if (!isOidcEnabled()) {
     return res.status(404).json({ error: 'OIDC is not enabled' });
@@ -56,7 +58,8 @@ router.get('/login', async (req, res) => {
     const client = await getOidcClient();
     const state = crypto.randomBytes(16).toString('hex');
     const nonce = crypto.randomBytes(16).toString('hex');
-    stateMap.set(state, { nonce, createdAt: Date.now() });
+    const source = req.query.source === 'web' ? 'web' : 'app';
+    stateMap.set(state, { nonce, source, createdAt: Date.now() });
 
     const authUrl = client.authorizationUrl({
       scope: 'openid email profile',
@@ -158,6 +161,23 @@ router.get('/callback', async (req, res) => {
 
     const tokens = issueTokens(userId);
     await storeRefreshToken(userId, tokens.refresh);
+
+    if (stateData.source === 'web') {
+      // Web browser: inject tokens into localStorage then redirect to app
+      const access  = JSON.stringify(tokens.access);
+      const refresh = JSON.stringify(tokens.refresh);
+      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Signing in…</title></head><body>
+<script>
+try {
+  localStorage.setItem('gv-access',  ${access});
+  localStorage.setItem('gv-refresh', ${refresh});
+} catch(e) {}
+window.location.replace('/');
+</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:20vh">Signing in…</p>
+</body></html>`);
+    }
 
     const redirectUrl = `gamevault://auth/callback?access=${encodeURIComponent(tokens.access)}&refresh=${encodeURIComponent(tokens.refresh)}`;
     res.redirect(redirectUrl);
