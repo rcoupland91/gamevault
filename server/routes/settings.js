@@ -20,7 +20,7 @@ router.get('/public', async (req, res) => {
 
     res.json({
       signups_enabled: s.signups_enabled !== 'false',
-      oidc_enabled: oidcEnvReady && s.oidc_enabled === 'true',
+      oidc_enabled: oidcEnvReady,
       oidc_display_name: s.oidc_display_name || 'SSO',
     });
   } catch (err) {
