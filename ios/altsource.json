@@ -1,0 +1,26 @@
+{
+  "name": "GameVault",
+  "identifier": "com.gamevault.altsource",
+  "sourceURL": "https://raw.githubusercontent.com/rcoupland91/gamevault-ios/main/altsource.json",
+  "apps": [
+    {
+      "name": "GameVault",
+      "bundleIdentifier": "com.gamevault.app",
+      "developerName": "GameVault",
+      "subtitle": "Your self-hosted game library",
+      "localizedDescription": "A native iOS companion for your self-hosted GameVault server.\n\nTrack your game library — Now Playing, Completed, and Backlog — with full sync to your GameVault server. All your data stays on your own server; the app is just a native client.\n\nFeatures:\n• Dashboard with stats, hours played, platform & genre breakdown\n• Now Playing, Completed, and Backlog tabs\n• Search & add games from the RAWG.io database (500k+ titles)\n• Edit ratings, hours, reviews, and notes\n• Two-factor authentication (TOTP + email OTP)\n• Liquid Glass design for iOS 17+",
+      "iconURL": "https://raw.githubusercontent.com/rcoupland91/gamevault-ios/main/GameVaultApp/Sources/GameVaultApp/Resources/Assets.xcassets/AppIcon.appiconset/icon-512.png",
+      "tintColor": "5B5EF4",
+      "screenshotURLs": [],
+      "version": "0.0.0",
+      "versions": [],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSAllowsLocalNetworking": "Required to connect to your self-hosted GameVault server on your local network"
+        }
+      }
+    }
+  ],
+  "news": []
+}

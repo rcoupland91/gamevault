@@ -6,9 +6,23 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 router.get('/public', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT key, value FROM app_settings WHERE key = 'signups_enabled'"
+      "SELECT key, value FROM app_settings WHERE key IN ('signups_enabled', 'oidc_enabled', 'oidc_display_name')"
     );
-    res.json({ signups_enabled: rows[0]?.value !== 'false' });
+    const s = {};
+    rows.forEach(r => { s[r.key] = r.value; });
+
+    // OIDC is active only when the env var is set AND the DB flag is enabled
+    const oidcEnvReady = !!(process.env.OIDC_ENABLED === 'true' &&
+      process.env.OIDC_ISSUER_URL &&
+      process.env.OIDC_CLIENT_ID &&
+      process.env.OIDC_CLIENT_SECRET &&
+      process.env.OIDC_CALLBACK_URL);
+
+    res.json({
+      signups_enabled: s.signups_enabled !== 'false',
+      oidc_enabled: oidcEnvReady && s.oidc_enabled === 'true',
+      oidc_display_name: s.oidc_display_name || 'SSO',
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
@@ -30,7 +44,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.patch('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { key, value } = req.body;
-    const allowed = ['signups_enabled'];
+    const allowed = ['signups_enabled', 'oidc_enabled', 'oidc_display_name'];
     if (!allowed.includes(key))
       return res.status(400).json({ error: 'Unknown setting' });
 

@@ -21,7 +21,8 @@
     "dotenv": "^16.3.1",
     "helmet": "^7.1.0",
     "node-fetch": "^2.7.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "openid-client": "^4.9.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
