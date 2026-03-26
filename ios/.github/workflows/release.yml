@@ -1,0 +1,203 @@
+name: Release iOS IPA
+
+# Triggered when a version tag (v*) is pushed.
+# Builds an unsigned IPA, attaches it to the GitHub Release,
+# and updates altsource.json so AltStore users get the update automatically.
+#
+# Tagging flow (manual):
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# Or set up auto-tagging from your CI (bump on merge to main, etc.)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to release (e.g. v1.2.0)'
+        required: true
+
+jobs:
+  release-ipa:
+    name: Build IPA & Create Release
+    runs-on: macos-15
+    timeout-minutes: 40
+    permissions:
+      contents: write  # create release + push altsource.json update
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for changelog generation
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          VERSION_NUM="${VERSION#v}"
+          echo "VERSION=$VERSION"         >> $GITHUB_OUTPUT
+          echo "VERSION_NUM=$VERSION_NUM" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname \
+            | grep -v "${{ steps.version.outputs.VERSION }}" \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' \
+            | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" | head -20)
+          else
+            COMMITS=$(git log "${PREV_TAG}..${{ steps.version.outputs.VERSION }}" --pretty=format:"- %s")
+          fi
+          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS"     >> $GITHUB_OUTPUT
+          echo "EOF"          >> $GITHUB_OUTPUT
+
+      - name: Select Xcode 16
+        run: |
+          XCODE=$(ls /Applications | grep "Xcode_16" | sort -V | tail -1)
+          sudo xcode-select -s "/Applications/${XCODE}/Contents/Developer"
+          echo "Using: $(xcodebuild -version | head -1)"
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: brew-xcodegen-${{ runner.os }}
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: GameVaultApp
+        run: xcodegen generate
+
+      # Unsigned build — AltStore re-signs with the user's own Apple ID
+      - name: Build archive (unsigned)
+        working-directory: GameVaultApp
+        run: |
+          xcodebuild archive \
+            -project GameVaultApp.xcodeproj \
+            -scheme GameVaultApp \
+            -configuration Release \
+            -archivePath build/GameVaultApp.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SKIP_INSTALL=NO \
+            2>&1 | tail -30
+
+      - name: Package IPA
+        id: package
+        working-directory: GameVaultApp
+        run: |
+          APP_PATH=$(find build/GameVaultApp.xcarchive/Products/Applications -name "*.app" | head -1)
+          echo "Packaging: $APP_PATH"
+          mkdir -p build/Payload
+          cp -r "$APP_PATH" build/Payload/
+          cd build
+          IPA_NAME="GameVault-${{ steps.version.outputs.VERSION }}.ipa"
+          zip -r "$IPA_NAME" Payload
+          IPA_SIZE=$(stat -f%z "$IPA_NAME")
+          echo "IPA size: $(du -sh "$IPA_NAME" | cut -f1)"
+          echo "IPA_NAME=$IPA_NAME"           >> $GITHUB_OUTPUT
+          echo "IPA_PATH=$(pwd)/$IPA_NAME"    >> $GITHUB_OUTPUT
+          echo "IPA_SIZE=$IPA_SIZE"           >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release and upload IPA
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          CHANGELOG: ${{ steps.changelog.outputs.COMMITS }}
+        run: |
+          NOTES=$(cat <<NOTES
+          ## GameVault iOS $VERSION
+
+          ### What's Changed
+          $CHANGELOG
+
+          ---
+
+          ### Install via AltStore
+          1. Add the AltStore source: \`https://raw.githubusercontent.com/${{ github.repository }}/main/altsource.json\`
+          2. Find **GameVault** in the Browse tab and tap **Install**
+          3. Open the app and enter your GameVault server URL
+
+          ### Install manually
+          Download \`${{ steps.package.outputs.IPA_NAME }}\` below and sideload with [AltStore](https://altstore.io) or [Sideloadly](https://sideloadly.io).
+
+          > **Note:** This is an unsigned IPA. AltStore will re-sign it with your Apple ID automatically. Apps signed with a free Apple ID are valid for 7 days and need periodic refresh via AltStore.
+          NOTES
+          )
+
+          # Create the release (fails gracefully if it already exists)
+          gh release create "$VERSION" \
+            "${{ steps.package.outputs.IPA_PATH }}" \
+            --title "GameVault iOS $VERSION" \
+            --notes "$NOTES" \
+            --repo "${{ github.repository }}" \
+            || gh release upload "$VERSION" \
+                 "${{ steps.package.outputs.IPA_PATH }}" \
+                 --clobber \
+                 --repo "${{ github.repository }}"
+
+      - name: Update altsource.json with new version
+        env:
+          VERSION:     ${{ steps.version.outputs.VERSION }}
+          VERSION_NUM: ${{ steps.version.outputs.VERSION_NUM }}
+          IPA_SIZE:    ${{ steps.package.outputs.IPA_SIZE }}
+          REPO:        ${{ github.repository }}
+        run: |
+          TODAY=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${{ steps.package.outputs.IPA_NAME }}"
+
+          python3 - <<PYEOF
+          import json, os
+
+          source_path = "altsource.json"
+          with open(source_path) as f:
+              data = json.load(f)
+
+          new_version = {
+              "version":              os.environ["VERSION_NUM"],
+              "date":                 os.environ["TODAY"],
+              "localizedDescription": f"See release notes at https://github.com/{os.environ['REPO']}/releases/tag/{os.environ['VERSION']}",
+              "downloadURL":          os.environ["DOWNLOAD_URL"],
+              "size":                 int(os.environ["IPA_SIZE"])
+          }
+
+          for app in data.get("apps", []):
+              if app.get("bundleIdentifier") == "com.gamevault.app":
+                  versions = [v for v in app.get("versions", [])
+                              if v.get("version") != os.environ["VERSION_NUM"]]
+                  app["versions"] = [new_version] + versions
+                  app["version"]  = os.environ["VERSION_NUM"]
+                  break
+
+          with open(source_path, "w") as f:
+              json.dump(data, f, indent=2)
+              f.write("\n")
+
+          print(f"altsource.json updated to {os.environ['VERSION_NUM']}")
+          PYEOF
+
+      - name: Commit updated altsource.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add altsource.json
+          if git diff --staged --quiet; then
+            echo "altsource.json unchanged — nothing to commit"
+          else
+            git commit -m "chore(ios): update AltStore source for ${{ steps.version.outputs.VERSION }}"
+            git push origin HEAD:main
+          fi

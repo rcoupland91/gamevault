@@ -41,6 +41,7 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 
 // ── API Routes ──
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth/oidc', require('./routes/oidc'));
 app.use('/api/games', require('./routes/games'));
 app.use('/api/rawg', require('./routes/rawg'));
 app.use('/api/settings', require('./routes/settings'));

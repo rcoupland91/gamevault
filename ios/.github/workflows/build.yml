@@ -1,0 +1,75 @@
+name: Build iOS IPA
+
+# Runs on every push and PR to validate the build and produce a
+# downloadable unsigned IPA artifact. For tagged releases the IPA
+# is built and uploaded by release.yml instead.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    name: Build Unsigned IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: |
+          XCODE=$(ls /Applications | grep "Xcode_16" | sort -V | tail -1)
+          sudo xcode-select -s "/Applications/${XCODE}/Contents/Developer"
+          xcodebuild -version
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: brew-xcodegen-${{ runner.os }}
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: GameVaultApp
+        run: xcodegen generate
+
+      - name: Build archive (unsigned)
+        working-directory: GameVaultApp
+        run: |
+          xcodebuild archive \
+            -project GameVaultApp.xcodeproj \
+            -scheme GameVaultApp \
+            -configuration Release \
+            -archivePath build/GameVaultApp.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SKIP_INSTALL=NO \
+            2>&1 | tail -30
+
+      - name: Package IPA
+        working-directory: GameVaultApp
+        run: |
+          APP_PATH=$(find build/GameVaultApp.xcarchive/Products/Applications -name "*.app" | head -1)
+          echo "Packaging: $APP_PATH"
+          mkdir -p build/Payload
+          cp -r "$APP_PATH" build/Payload/
+          cd build
+          zip -r GameVaultApp.ipa Payload
+          echo "IPA size: $(du -sh GameVaultApp.ipa | cut -f1)"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameVault-iOS-${{ github.sha }}
+          path: GameVaultApp/build/GameVaultApp.ipa
+          retention-days: 14
+          if-no-files-found: error

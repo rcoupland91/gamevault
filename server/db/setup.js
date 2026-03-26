@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS games (
 -- Add completed_at to existing deployments
 ALTER TABLE games ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
+-- OAuth / OIDC identity links
+CREATE TABLE IF NOT EXISTS user_oauth (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  provider   VARCHAR(50) NOT NULL,
+  subject    TEXT NOT NULL,
+  email      TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (provider, subject)
+);
+
 -- App settings (server-wide)
 CREATE TABLE IF NOT EXISTS app_settings (
   key   VARCHAR(100) PRIMARY KEY,
@@ -96,6 +107,8 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 -- Default settings
 INSERT INTO app_settings (key, value) VALUES ('signups_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_settings (key, value) VALUES ('oidc_enabled', 'false') ON CONFLICT (key) DO NOTHING;
+INSERT INTO app_settings (key, value) VALUES ('oidc_display_name', 'SSO') ON CONFLICT (key) DO NOTHING;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_games_user_id ON games(user_id);
